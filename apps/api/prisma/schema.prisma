@@ -1,0 +1,440 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ORGANIZATION
+// ==========================================
+
+enum OrganizationType {
+  CLINIC
+  BANK
+  RESTAURANT
+  GOVERNMENT
+  OTHER
+}
+
+enum PlanType {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+model Organization {
+  id        String           @id @default(uuid())
+  name      String
+  slug      String           @unique
+  type      OrganizationType
+  address   String?
+  phone     String?
+  email     String?
+  plan      PlanType         @default(FREE)
+  ownerId   String           @map("owner_id")
+  timezone  String           @default("Asia/Kuala_Lumpur")
+  isActive  Boolean          @default(true) @map("is_active")
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  owner         User                  @relation("OrgOwner", fields: [ownerId], references: [id])
+  branding      OrganizationBranding?
+  settings      QueueSettings?
+  services      Service[]
+  counters      Counter[]
+  userRoles     UserRole[]
+  invitations   Invitation[]
+  staffAssignments StaffAssignment[]
+  queueTickets  QueueTicket[]
+  dailyCounters DailyQueueCounter[]
+  auditLogs     AuditLog[]
+
+  @@map("organizations")
+}
+
+model OrganizationBranding {
+  id           String  @id @default(uuid())
+  orgId        String  @unique @map("org_id")
+  logoUrl      String? @map("logo_url")
+  primaryColor String  @default("#3B82F6") @map("primary_color")
+  qrText       String  @default("Scan to join queue") @map("qr_text")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("organization_branding")
+}
+
+// ==========================================
+// USERS (Staff, Admin, Owner)
+// ==========================================
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+}
+
+model User {
+  id                String       @id @default(uuid())
+  email             String       @unique
+  passwordHash      String?      @map("password_hash")
+  fullName          String       @map("full_name")
+  phone             String?
+  avatarUrl         String?      @map("avatar_url")
+  provider          AuthProvider @default(EMAIL)
+  emailVerified     Boolean      @default(false) @map("email_verified")
+  isActive          Boolean      @default(true) @map("is_active")
+  lastLoginAt       DateTime?    @map("last_login_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  ownedOrgs         Organization[]   @relation("OrgOwner")
+  roles             UserRole[]
+  staffAssignments  StaffAssignment[]
+  sessions          Session[]
+  invitationsSent   Invitation[]     @relation("InvitedBy")
+  ticketsCalled     QueueTicket[]    @relation("CalledBy")
+  ticketsCompleted  QueueTicket[]    @relation("CompletedBy")
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+enum UserRoleType {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+model UserRole {
+  id               String       @id @default(uuid())
+  userId           String       @map("user_id")
+  orgId            String       @map("org_id")
+  role             UserRoleType
+  assignedServiceId String?     @map("assigned_service_id")
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  service Service?     @relation(fields: [assignedServiceId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, orgId])
+  @@map("user_roles")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+model Invitation {
+  id          String           @id @default(uuid())
+  orgId       String           @map("org_id")
+  email       String
+  role        UserRoleType
+  serviceId   String?          @map("service_id")
+  invitedById String           @map("invited_by_id")
+  status      InvitationStatus @default(PENDING)
+  token       String           @unique
+  expiresAt   DateTime         @map("expires_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  invitedBy User         @relation("InvitedBy", fields: [invitedById], references: [id])
+  service   Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@map("invitations")
+}
+
+// ==========================================
+// SERVICES & COUNTERS
+// ==========================================
+
+model Service {
+  id             String  @id @default(uuid())
+  orgId          String  @map("org_id")
+  name           String
+  prefix         String
+  isActive       Boolean @default(true) @map("is_active")
+  sortOrder      Int     @default(0) @map("sort_order")
+  maxQueuePerDay Int?    @map("max_queue_per_day")
+  avgServingTime Int     @default(5) @map("avg_serving_time")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization  Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  counters      Counter[]
+  userRoles     UserRole[]
+  invitations   Invitation[]
+  queueTickets  QueueTicket[]
+  dailyCounters DailyQueueCounter[]
+
+  @@unique([orgId, prefix])
+  @@map("services")
+}
+
+model Counter {
+  id        String  @id @default(uuid())
+  orgId     String  @map("org_id")
+  serviceId String  @map("service_id")
+  name      String
+  isActive  Boolean @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization     Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  service          Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staffAssignments StaffAssignment[]
+  queueTickets     QueueTicket[]
+
+  @@map("counters")
+}
+
+// ==========================================
+// STAFF ASSIGNMENTS
+// ==========================================
+
+model StaffAssignment {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  counterId  String    @map("counter_id")
+  orgId      String    @map("org_id")
+  assignedAt DateTime  @default(now()) @map("assigned_at")
+  releasedAt DateTime? @map("released_at")
+
+  // Relations
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  counter Counter      @relation(fields: [counterId], references: [id], onDelete: Cascade)
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("staff_assignments")
+}
+
+// ==========================================
+// QUEUE TICKETS
+// ==========================================
+
+enum TicketStatus {
+  WAITING
+  CALLED
+  SERVING
+  COMPLETED
+  SKIPPED
+}
+
+model QueueTicket {
+  id                String       @id @default(uuid())
+  orgId             String       @map("org_id")
+  serviceId         String       @map("service_id")
+  counterId         String?      @map("counter_id")
+  ticketNumber      String       @map("ticket_number")
+  dailyNumber       Int          @map("daily_number")
+  status            TicketStatus @default(WAITING)
+  customerName      String?      @map("customer_name")
+  customerPhone     String?      @map("customer_phone")
+  customerProfileId String?      @map("customer_profile_id")
+  deviceFingerprint String?      @map("device_fingerprint")
+  calledById        String?      @map("called_by_id")
+  completedById     String?      @map("completed_by_id")
+  calledAt          DateTime?    @map("called_at")
+  servingAt         DateTime?    @map("serving_at")
+  completedAt       DateTime?    @map("completed_at")
+  skippedAt         DateTime?    @map("skipped_at")
+  recallCount       Int          @default(0) @map("recall_count")
+  isRejoin          Boolean      @default(false) @map("is_rejoin")
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  organization    Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  service         Service          @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  counter         Counter?         @relation(fields: [counterId], references: [id], onDelete: SetNull)
+  customerProfile CustomerProfile? @relation(fields: [customerProfileId], references: [id], onDelete: SetNull)
+  calledBy        User?            @relation("CalledBy", fields: [calledById], references: [id], onDelete: SetNull)
+  completedBy     User?            @relation("CompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  notifications   Notification[]
+
+  @@index([orgId, serviceId, status, createdAt])
+  @@map("queue_tickets")
+}
+
+// ==========================================
+// QUEUE SETTINGS
+// ==========================================
+
+model QueueSettings {
+  id              String  @id @default(uuid())
+  orgId           String  @unique @map("org_id")
+  resetTime       String  @default("00:00") @map("reset_time")
+  maxRecall       Int     @default(2) @map("max_recall")
+  requireName     Boolean @default(false) @map("require_name")
+  requirePhone    Boolean @default(false) @map("require_phone")
+  customFields    Json?   @map("custom_fields")
+  autoSkipTimeout Int?    @map("auto_skip_timeout")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("queue_settings")
+}
+
+// ==========================================
+// DAILY QUEUE COUNTERS (Performance)
+// ==========================================
+
+model DailyQueueCounter {
+  id           String   @id @default(uuid())
+  orgId        String   @map("org_id")
+  serviceId    String   @map("service_id")
+  date         DateTime @db.Date
+  lastNumber   Int      @default(0) @map("last_number")
+  totalServed  Int      @default(0) @map("total_served")
+  totalSkipped Int      @default(0) @map("total_skipped")
+
+  // Relations
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  service      Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, serviceId, date])
+  @@map("daily_queue_counters")
+}
+
+// ==========================================
+// CUSTOMER PROFILES (Mobile App)
+// ==========================================
+
+model CustomerProfile {
+  id           String       @id @default(uuid())
+  email        String?      @unique
+  phone        String?
+  fullName     String?      @map("full_name")
+  passwordHash String?      @map("password_hash")
+  provider     AuthProvider  @default(EMAIL)
+  avatarUrl    String?      @map("avatar_url")
+  pushToken    String?      @map("push_token")
+  isActive     Boolean      @default(true) @map("is_active")
+  lastLoginAt  DateTime?    @map("last_login_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  queueTickets      QueueTicket[]
+  favorites         CustomerFavorite[]
+  notifications     Notification[]
+  sessions          CustomerSession[]
+
+  @@map("customer_profiles")
+}
+
+model CustomerFavorite {
+  id         String   @id @default(uuid())
+  customerId String   @map("customer_id")
+  orgId      String   @map("org_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  customer CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, orgId])
+  @@map("customer_favorites")
+}
+
+// ==========================================
+// NOTIFICATIONS
+// ==========================================
+
+enum NotificationType {
+  YOUR_TURN
+  ALMOST_TURN
+  SKIPPED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model Notification {
+  id         String             @id @default(uuid())
+  ticketId   String             @map("ticket_id")
+  customerId String?            @map("customer_id")
+  type       NotificationType
+  status     NotificationStatus @default(PENDING)
+  sentAt     DateTime?          @map("sent_at")
+  createdAt  DateTime           @default(now()) @map("created_at")
+
+  // Relations
+  ticket   QueueTicket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  customer CustomerProfile? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@map("notifications")
+}
+
+// ==========================================
+// SESSIONS (Auth)
+// ==========================================
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  refreshToken String   @unique @map("refresh_token")
+  deviceInfo   String?  @map("device_info")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model CustomerSession {
+  id           String   @id @default(uuid())
+  customerId   String   @map("customer_id")
+  refreshToken String   @unique @map("refresh_token")
+  deviceInfo   String?  @map("device_info")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  customer CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_sessions")
+}
+
+// ==========================================
+// AUDIT LOGS
+// ==========================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  orgId      String   @map("org_id")
+  userId     String?  @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, createdAt])
+  @@map("audit_logs")
+}
