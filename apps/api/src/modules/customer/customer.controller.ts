@@ -15,6 +15,7 @@ import { CustomerService } from './customer.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RegisterCustomerDto, LoginCustomerDto, UpdateProfileDto } from './dto';
 
 @ApiTags('Customers')
 @Controller('customers')
@@ -24,7 +25,7 @@ export class CustomerController {
   @Public()
   @Post('register')
   @ApiOperation({ summary: 'Register a new customer account' })
-  async register(@Body() dto: any) {
+  async register(@Body() dto: RegisterCustomerDto) {
     return this.customerService.register(dto);
   }
 
@@ -32,7 +33,7 @@ export class CustomerController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Customer login with email/phone and password' })
-  async login(@Body() dto: any) {
+  async login(@Body() dto: LoginCustomerDto) {
     return this.customerService.login(dto);
   }
 
@@ -48,7 +49,7 @@ export class CustomerController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update customer profile' })
-  async updateProfile(@CurrentUser() user: any, @Body() dto: any) {
+  async updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
     return this.customerService.updateProfile(user.sub, dto);
   }
 

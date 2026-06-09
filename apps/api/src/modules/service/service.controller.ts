@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CreateServiceDto, UpdateServiceDto } from './dto';
 
 @ApiTags('Services')
 @ApiBearerAuth()
@@ -30,7 +31,7 @@ export class ServiceController {
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
   async create(
     @Param('orgId') orgId: string,
-    @Body() dto: any,
+    @Body() dto: CreateServiceDto,
     @CurrentUser() user: any,
   ) {
     return this.serviceService.create(orgId, dto, user);
@@ -65,7 +66,7 @@ export class ServiceController {
   async update(
     @Param('orgId') orgId: string,
     @Param('id') id: string,
-    @Body() dto: any,
+    @Body() dto: UpdateServiceDto,
     @CurrentUser() user: any,
   ) {
     return this.serviceService.update(orgId, id, dto, user);

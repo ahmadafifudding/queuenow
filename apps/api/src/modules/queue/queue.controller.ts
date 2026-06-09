@@ -16,6 +16,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { JoinQueueDto, CallNextDto } from './dto';
 
 @ApiTags('Queue')
 @Controller('organizations/:orgId/queue')
@@ -26,7 +27,7 @@ export class QueueController {
   @Post('join')
   @ApiOperation({ summary: 'Join the queue (public - no auth required)' })
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
-  async joinQueue(@Param('orgId') orgId: string, @Body() dto: any) {
+  async joinQueue(@Param('orgId') orgId: string, @Body() dto: JoinQueueDto) {
     return this.queueService.joinQueue(orgId, dto);
   }
 
@@ -39,7 +40,7 @@ export class QueueController {
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
   async callNext(
     @Param('orgId') orgId: string,
-    @Body() dto: any,
+    @Body() dto: CallNextDto,
     @CurrentUser() user: any,
   ) {
     return this.queueService.callNext(orgId, dto, user);

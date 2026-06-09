@@ -12,6 +12,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { NotificationService } from './notification.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RegisterPushTokenDto } from './dto';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -23,7 +24,7 @@ export class NotificationController {
   @Post('push-token')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Register or update push notification token' })
-  async registerPushToken(@CurrentUser() user: any, @Body() dto: any) {
+  async registerPushToken(@CurrentUser() user: any, @Body() dto: RegisterPushTokenDto) {
     return this.notificationService.registerPushToken(user.sub, dto);
   }
 

@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { InviteStaffDto } from './dto';
 
 @ApiTags('Staff')
 @ApiBearerAuth()
@@ -30,7 +31,7 @@ export class StaffController {
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
   async invite(
     @Param('orgId') orgId: string,
-    @Body() dto: any,
+    @Body() dto: InviteStaffDto,
     @CurrentUser() user: any,
   ) {
     return this.staffService.invite(orgId, dto, user);

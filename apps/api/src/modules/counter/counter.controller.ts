@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CreateCounterDto, UpdateCounterDto } from './dto';
 
 @ApiTags('Counters')
 @ApiBearerAuth()
@@ -30,7 +31,7 @@ export class CounterController {
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
   async create(
     @Param('orgId') orgId: string,
-    @Body() dto: any,
+    @Body() dto: CreateCounterDto,
     @CurrentUser() user: any,
   ) {
     return this.counterService.create(orgId, dto, user);
@@ -65,7 +66,7 @@ export class CounterController {
   async update(
     @Param('orgId') orgId: string,
     @Param('id') id: string,
-    @Body() dto: any,
+    @Body() dto: UpdateCounterDto,
     @CurrentUser() user: any,
   ) {
     return this.counterService.update(orgId, id, dto, user);
