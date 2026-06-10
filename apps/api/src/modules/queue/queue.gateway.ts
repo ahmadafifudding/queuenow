@@ -10,6 +10,11 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import {
+  QueueUpdatePayload,
+  TicketCalledPayload,
+  TicketNotificationPayload,
+} from './queue.events';
 
 @WebSocketGateway({
   cors: {
@@ -87,7 +92,7 @@ export class QueueGateway
   /**
    * Emit queue update to all subscribers of an organization
    */
-  emitQueueUpdate(orgId: string, payload: any): void {
+  emitQueueUpdate(orgId: string, payload: QueueUpdatePayload): void {
     this.server.to(`org:${orgId}`).emit('queue:update', payload);
 
     // Also emit to service-specific room if serviceId is available
@@ -106,14 +111,14 @@ export class QueueGateway
   /**
    * Emit ticket called event - used for display screens and announcements
    */
-  emitTicketCalled(orgId: string, payload: any): void {
+  emitTicketCalled(orgId: string, payload: TicketCalledPayload): void {
     this.server.to(`org:${orgId}`).emit('queue:ticket-called', payload);
   }
 
   /**
    * Emit notification to a specific ticket subscriber (customer's device)
    */
-  emitTicketNotification(ticketId: string, payload: any): void {
+  emitTicketNotification(ticketId: string, payload: TicketNotificationPayload): void {
     this.server.to(`ticket:${ticketId}`).emit('ticket:notification', payload);
   }
 }
