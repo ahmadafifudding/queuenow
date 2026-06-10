@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { IAuthenticatedUser } from '../../common/interfaces';
 
 @ApiTags('QR Code')
 @ApiBearerAuth()
@@ -19,7 +20,7 @@ export class QrCodeController {
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
   async generateOrgQrCode(
     @Param('orgId') orgId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.qrCodeService.generateOrgQrUrl(orgId, user);
   }
@@ -32,7 +33,7 @@ export class QrCodeController {
   async generateServiceQrCode(
     @Param('orgId') orgId: string,
     @Param('serviceId') serviceId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.qrCodeService.generateServiceQrUrl(orgId, serviceId, user);
   }

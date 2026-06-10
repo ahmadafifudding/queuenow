@@ -6,13 +6,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { IAuthenticatedUser } from '../../common/interfaces';
 import { randomBytes } from 'crypto';
 
 @Injectable()
 export class StaffService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async invite(orgId: string, dto: any, user: any) {
+  async invite(orgId: string, dto: any, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     // Check if user already exists in org
@@ -61,14 +62,14 @@ export class StaffService {
         email: dto.email,
         role: dto.role ?? 'STAFF',
         serviceId: dto.serviceId,
-        invitedById: user.sub,
+        invitedById: user.id,
         token,
         expiresAt,
       },
     });
   }
 
-  async findAll(orgId: string, role: string | undefined, user: any) {
+  async findAll(orgId: string, role: string | undefined, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     const where: any = { orgId };
@@ -97,7 +98,7 @@ export class StaffService {
     });
   }
 
-  async listInvitations(orgId: string, user: any) {
+  async listInvitations(orgId: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     return this.prisma.invitation.findMany({
@@ -110,11 +111,11 @@ export class StaffService {
     });
   }
 
-  async remove(orgId: string, userId: string, user: any) {
+  async remove(orgId: string, userId: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     // Cannot remove yourself
-    if (userId === user.sub) {
+    if (userId === user.id) {
       throw new BadRequestException('Cannot remove yourself from the organization');
     }
 
@@ -143,7 +144,7 @@ export class StaffService {
     ]);
   }
 
-  async cancelInvitation(orgId: string, invitationId: string, user: any) {
+  async cancelInvitation(orgId: string, invitationId: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     const invitation = await this.prisma.invitation.findFirst({
@@ -157,7 +158,7 @@ export class StaffService {
     await this.prisma.invitation.delete({ where: { id: invitationId } });
   }
 
-  private validateOrgAccess(orgId: string, user: any): void {
+  private validateOrgAccess(orgId: string, user: IAuthenticatedUser): void {
     if (user.orgId !== orgId) {
       throw new ForbiddenException('Access denied to this organization');
     }

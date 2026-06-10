@@ -17,6 +17,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { InviteStaffDto } from './dto';
+import { IAuthenticatedUser } from '../../common/interfaces';
 
 @ApiTags('Staff')
 @ApiBearerAuth()
@@ -32,7 +33,7 @@ export class StaffController {
   async invite(
     @Param('orgId') orgId: string,
     @Body() dto: InviteStaffDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.staffService.invite(orgId, dto, user);
   }
@@ -45,7 +46,7 @@ export class StaffController {
   async findAll(
     @Param('orgId') orgId: string,
     @Query('role') role: string | undefined,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.staffService.findAll(orgId, role, user);
   }
@@ -54,7 +55,7 @@ export class StaffController {
   @Roles('OWNER', 'ADMIN')
   @ApiOperation({ summary: 'List pending invitations' })
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
-  async listInvitations(@Param('orgId') orgId: string, @CurrentUser() user: any) {
+  async listInvitations(@Param('orgId') orgId: string, @CurrentUser() user: IAuthenticatedUser) {
     return this.staffService.listInvitations(orgId, user);
   }
 
@@ -67,7 +68,7 @@ export class StaffController {
   async remove(
     @Param('orgId') orgId: string,
     @Param('userId') userId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.staffService.remove(orgId, userId, user);
   }
@@ -81,7 +82,7 @@ export class StaffController {
   async cancelInvitation(
     @Param('orgId') orgId: string,
     @Param('invitationId') invitationId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.staffService.cancelInvitation(orgId, invitationId, user);
   }

@@ -17,6 +17,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateServiceDto, UpdateServiceDto } from './dto';
+import { IAuthenticatedUser } from '../../common/interfaces';
 
 @ApiTags('Services')
 @ApiBearerAuth()
@@ -32,7 +33,7 @@ export class ServiceController {
   async create(
     @Param('orgId') orgId: string,
     @Body() dto: CreateServiceDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.serviceService.create(orgId, dto, user);
   }
@@ -41,7 +42,7 @@ export class ServiceController {
   @Roles('OWNER', 'ADMIN', 'STAFF')
   @ApiOperation({ summary: 'List all services for organization' })
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
-  async findAll(@Param('orgId') orgId: string, @CurrentUser() user: any) {
+  async findAll(@Param('orgId') orgId: string, @CurrentUser() user: IAuthenticatedUser) {
     return this.serviceService.findAll(orgId, user);
   }
 
@@ -53,7 +54,7 @@ export class ServiceController {
   async findOne(
     @Param('orgId') orgId: string,
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.serviceService.findOne(orgId, id, user);
   }
@@ -67,7 +68,7 @@ export class ServiceController {
     @Param('orgId') orgId: string,
     @Param('id') id: string,
     @Body() dto: UpdateServiceDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.serviceService.update(orgId, id, dto, user);
   }
@@ -81,7 +82,7 @@ export class ServiceController {
   async remove(
     @Param('orgId') orgId: string,
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.serviceService.remove(orgId, id, user);
   }

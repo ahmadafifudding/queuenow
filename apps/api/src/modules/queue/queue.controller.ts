@@ -17,6 +17,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { JoinQueueDto, CallNextDto } from './dto';
+import { IAuthenticatedUser } from '../../common/interfaces';
 
 @ApiTags('Queue')
 @Controller('organizations/:orgId/queue')
@@ -41,7 +42,7 @@ export class QueueController {
   async callNext(
     @Param('orgId') orgId: string,
     @Body() dto: CallNextDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.queueService.callNext(orgId, dto, user);
   }
@@ -57,7 +58,7 @@ export class QueueController {
   async recall(
     @Param('orgId') orgId: string,
     @Param('ticketId') ticketId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.queueService.recall(orgId, ticketId, user);
   }
@@ -73,7 +74,7 @@ export class QueueController {
   async skip(
     @Param('orgId') orgId: string,
     @Param('ticketId') ticketId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.queueService.skip(orgId, ticketId, user);
   }
@@ -89,7 +90,7 @@ export class QueueController {
   async complete(
     @Param('orgId') orgId: string,
     @Param('ticketId') ticketId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.queueService.complete(orgId, ticketId, user);
   }
@@ -105,7 +106,7 @@ export class QueueController {
   async rejoin(
     @Param('orgId') orgId: string,
     @Param('ticketId') ticketId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.queueService.rejoin(orgId, ticketId, user);
   }

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueueGateway } from './queue.gateway';
+import { IAuthenticatedUser } from '../../common/interfaces';
 
 @Injectable()
 export class QueueService {
@@ -126,7 +127,7 @@ export class QueueService {
    * Call next customer in the queue - FIFO order
    * Staff must specify their counter; calls the oldest WAITING ticket for that counter's service
    */
-  async callNext(orgId: string, dto: any, user: any) {
+  async callNext(orgId: string, dto: any, user: IAuthenticatedUser) {
     this.validateStaffOrgAccess(orgId, user);
 
     const { counterId } = dto;
@@ -161,7 +162,7 @@ export class QueueService {
       data: {
         status: 'CALLED',
         counterId,
-        calledById: user.sub,
+        calledById: user.id,
         calledAt: new Date(),
       },
       include: {
@@ -197,7 +198,7 @@ export class QueueService {
    * Recall a customer - maximum 2 times as per queue settings
    * After max recalls, the ticket should be skipped
    */
-  async recall(orgId: string, ticketId: string, user: any) {
+  async recall(orgId: string, ticketId: string, user: IAuthenticatedUser) {
     this.validateStaffOrgAccess(orgId, user);
 
     const ticket = await this.prisma.queueTicket.findFirst({
@@ -261,7 +262,7 @@ export class QueueService {
    * Skip a called customer - moves them to SKIPPED status
    * Skipped customers can be rejoined later by staff
    */
-  async skip(orgId: string, ticketId: string, user: any) {
+  async skip(orgId: string, ticketId: string, user: IAuthenticatedUser) {
     this.validateStaffOrgAccess(orgId, user);
 
     const ticket = await this.prisma.queueTicket.findFirst({
@@ -314,7 +315,7 @@ export class QueueService {
   /**
    * Complete serving a customer - moves from CALLED/SERVING to COMPLETED
    */
-  async complete(orgId: string, ticketId: string, user: any) {
+  async complete(orgId: string, ticketId: string, user: IAuthenticatedUser) {
     this.validateStaffOrgAccess(orgId, user);
 
     const ticket = await this.prisma.queueTicket.findFirst({
@@ -333,7 +334,7 @@ export class QueueService {
       where: { id: ticketId },
       data: {
         status: 'COMPLETED',
-        completedById: user.sub,
+        completedById: user.id,
         completedAt: new Date(),
         servingAt: ticket.servingAt ?? ticket.calledAt,
       },
@@ -375,7 +376,7 @@ export class QueueService {
    * Rejoin a skipped customer - places them back in WAITING status
    * Creates a new entry at the end of the queue with isRejoin flag
    */
-  async rejoin(orgId: string, ticketId: string, user: any) {
+  async rejoin(orgId: string, ticketId: string, user: IAuthenticatedUser) {
     this.validateStaffOrgAccess(orgId, user);
 
     const ticket = await this.prisma.queueTicket.findFirst({
@@ -554,7 +555,7 @@ export class QueueService {
     };
   }
 
-  private validateStaffOrgAccess(orgId: string, user: any): void {
+  private validateStaffOrgAccess(orgId: string, user: IAuthenticatedUser): void {
     if (user.orgId !== orgId) {
       throw new ForbiddenException('Access denied to this organization');
     }

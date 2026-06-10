@@ -4,12 +4,13 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { IAuthenticatedUser } from '../../common/interfaces';
 
 @Injectable()
 export class CounterService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(orgId: string, dto: any, user: any) {
+  async create(orgId: string, dto: any, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     // Verify service exists within org
@@ -34,7 +35,7 @@ export class CounterService {
     });
   }
 
-  async findAll(orgId: string, user: any) {
+  async findAll(orgId: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     return this.prisma.counter.findMany({
@@ -50,7 +51,7 @@ export class CounterService {
     });
   }
 
-  async findOne(orgId: string, id: string, user: any) {
+  async findOne(orgId: string, id: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     const counter = await this.prisma.counter.findFirst({
@@ -71,7 +72,7 @@ export class CounterService {
     return counter;
   }
 
-  async update(orgId: string, id: string, dto: any, user: any) {
+  async update(orgId: string, id: string, dto: any, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     const counter = await this.prisma.counter.findFirst({
@@ -91,7 +92,7 @@ export class CounterService {
     });
   }
 
-  async remove(orgId: string, id: string, user: any) {
+  async remove(orgId: string, id: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     const counter = await this.prisma.counter.findFirst({
@@ -105,7 +106,7 @@ export class CounterService {
     await this.prisma.counter.delete({ where: { id } });
   }
 
-  private validateOrgAccess(orgId: string, user: any): void {
+  private validateOrgAccess(orgId: string, user: IAuthenticatedUser): void {
     if (user.orgId !== orgId) {
       throw new ForbiddenException('Access denied to this organization');
     }

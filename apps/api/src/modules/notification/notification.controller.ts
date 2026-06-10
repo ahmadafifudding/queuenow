@@ -13,6 +13,7 @@ import { NotificationService } from './notification.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RegisterPushTokenDto } from './dto';
+import { IAuthenticatedCustomer } from '../../common/interfaces';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -24,8 +25,8 @@ export class NotificationController {
   @Post('push-token')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Register or update push notification token' })
-  async registerPushToken(@CurrentUser() user: any, @Body() dto: RegisterPushTokenDto) {
-    return this.notificationService.registerPushToken(user.sub, dto);
+  async registerPushToken(@CurrentUser() user: IAuthenticatedCustomer, @Body() dto: RegisterPushTokenDto) {
+    return this.notificationService.registerPushToken(user.id, dto);
   }
 
   @Get()
@@ -33,12 +34,12 @@ export class NotificationController {
   @ApiQuery({ name: 'limit', required: false, description: 'Number of notifications to return' })
   @ApiQuery({ name: 'offset', required: false, description: 'Offset for pagination' })
   async getNotifications(
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedCustomer,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
     return this.notificationService.getNotifications(
-      user.sub,
+      user.id,
       limit ? parseInt(limit, 10) : 20,
       offset ? parseInt(offset, 10) : 0,
     );

@@ -17,6 +17,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateCounterDto, UpdateCounterDto } from './dto';
+import { IAuthenticatedUser } from '../../common/interfaces';
 
 @ApiTags('Counters')
 @ApiBearerAuth()
@@ -32,7 +33,7 @@ export class CounterController {
   async create(
     @Param('orgId') orgId: string,
     @Body() dto: CreateCounterDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.counterService.create(orgId, dto, user);
   }
@@ -41,7 +42,7 @@ export class CounterController {
   @Roles('OWNER', 'ADMIN', 'STAFF')
   @ApiOperation({ summary: 'List all counters for organization' })
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
-  async findAll(@Param('orgId') orgId: string, @CurrentUser() user: any) {
+  async findAll(@Param('orgId') orgId: string, @CurrentUser() user: IAuthenticatedUser) {
     return this.counterService.findAll(orgId, user);
   }
 
@@ -53,7 +54,7 @@ export class CounterController {
   async findOne(
     @Param('orgId') orgId: string,
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.counterService.findOne(orgId, id, user);
   }
@@ -67,7 +68,7 @@ export class CounterController {
     @Param('orgId') orgId: string,
     @Param('id') id: string,
     @Body() dto: UpdateCounterDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.counterService.update(orgId, id, dto, user);
   }
@@ -81,7 +82,7 @@ export class CounterController {
   async remove(
     @Param('orgId') orgId: string,
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: IAuthenticatedUser,
   ) {
     return this.counterService.remove(orgId, id, user);
   }

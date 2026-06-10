@@ -5,12 +5,13 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { IAuthenticatedUser } from '../../common/interfaces';
 
 @Injectable()
 export class ServiceService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(orgId: string, dto: any, user: any) {
+  async create(orgId: string, dto: any, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     // Check for duplicate prefix within org
@@ -35,7 +36,7 @@ export class ServiceService {
     });
   }
 
-  async findAll(orgId: string, user: any) {
+  async findAll(orgId: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     return this.prisma.service.findMany({
@@ -49,7 +50,7 @@ export class ServiceService {
     });
   }
 
-  async findOne(orgId: string, id: string, user: any) {
+  async findOne(orgId: string, id: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     const service = await this.prisma.service.findFirst({
@@ -69,7 +70,7 @@ export class ServiceService {
     return service;
   }
 
-  async update(orgId: string, id: string, dto: any, user: any) {
+  async update(orgId: string, id: string, dto: any, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     const service = await this.prisma.service.findFirst({
@@ -96,7 +97,7 @@ export class ServiceService {
     });
   }
 
-  async remove(orgId: string, id: string, user: any) {
+  async remove(orgId: string, id: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     const service = await this.prisma.service.findFirst({
@@ -110,7 +111,7 @@ export class ServiceService {
     await this.prisma.service.delete({ where: { id } });
   }
 
-  private validateOrgAccess(orgId: string, user: any): void {
+  private validateOrgAccess(orgId: string, user: IAuthenticatedUser): void {
     if (user.orgId !== orgId) {
       throw new ForbiddenException('Access denied to this organization');
     }

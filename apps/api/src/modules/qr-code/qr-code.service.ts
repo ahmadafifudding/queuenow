@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { IAuthenticatedUser } from '../../common/interfaces';
 
 @Injectable()
 export class QrCodeService {
@@ -13,7 +14,7 @@ export class QrCodeService {
     private readonly configService: ConfigService,
   ) {}
 
-  async generateOrgQrUrl(orgId: string, user: any) {
+  async generateOrgQrUrl(orgId: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     const org = await this.prisma.organization.findFirst({
@@ -44,7 +45,7 @@ export class QrCodeService {
     };
   }
 
-  async generateServiceQrUrl(orgId: string, serviceId: string, user: any) {
+  async generateServiceQrUrl(orgId: string, serviceId: string, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     const service = await this.prisma.service.findFirst({
@@ -88,7 +89,7 @@ export class QrCodeService {
     };
   }
 
-  private validateOrgAccess(orgId: string, user: any): void {
+  private validateOrgAccess(orgId: string, user: IAuthenticatedUser): void {
     if (user.orgId !== orgId) {
       throw new ForbiddenException('Access denied to this organization');
     }
