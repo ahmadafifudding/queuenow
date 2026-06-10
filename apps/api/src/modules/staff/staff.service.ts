@@ -5,15 +5,17 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { Prisma, UserRoleType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IAuthenticatedUser } from '../../common/interfaces';
+import { InviteStaffDto } from './dto';
 import { randomBytes } from 'crypto';
 
 @Injectable()
 export class StaffService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async invite(orgId: string, dto: any, user: IAuthenticatedUser) {
+  async invite(orgId: string, dto: InviteStaffDto, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
     // Check if user already exists in org
@@ -72,9 +74,12 @@ export class StaffService {
   async findAll(orgId: string, role: string | undefined, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
-    const where: any = { orgId };
+    const where: Prisma.UserRoleWhereInput = { orgId };
     if (role) {
-      where.role = role;
+      if (!(role in UserRoleType)) {
+        throw new BadRequestException(`Invalid role: ${role}`);
+      }
+      where.role = role as UserRoleType;
     }
 
     return this.prisma.userRole.findMany({
