@@ -1,27 +1,31 @@
 {
-  "name": "queuenow",
-  "version": "1.0.0",
-  "private": true,
-  "packageManager": "pnpm@10.28.1",
-  "engines": {
-    "node": ">=22.0.0"
-  },
-  "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
-    "lint": "turbo lint",
-    "test": "turbo test",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "clean": "turbo clean && rm -rf node_modules",
-    "db:generate": "pnpm --filter @queuenow/db generate",
-    "db:migrate": "pnpm --filter @queuenow/db migrate",
-    "db:push": "pnpm --filter @queuenow/db push",
-    "db:studio": "pnpm --filter @queuenow/db studio"
-  },
-  "devDependencies": {
-    "turbo": "^2.6.0",
-    "prettier": "^3.4.0",
-    "typescript": "^5.7.0"
-  }
+	"name": "queuenow",
+	"version": "1.0.0",
+	"private": true,
+	"packageManager": "pnpm@10.28.1",
+	"engines": {
+		"node": ">=22.0.0"
+	},
+	"scripts": {
+		"build": "turbo build",
+		"dev": "turbo dev",
+		"lint": "eslint .",
+		"test": "turbo test",
+		"format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+		"format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+		"clean": "turbo clean && rm -rf node_modules",
+		"db:generate": "pnpm --filter @queuenow/db generate",
+		"db:migrate": "pnpm --filter @queuenow/db migrate",
+		"db:push": "pnpm --filter @queuenow/db push",
+		"db:studio": "pnpm --filter @queuenow/db studio"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.39.4",
+		"eslint": "^9.39.4",
+		"globals": "^17.6.0",
+		"prettier": "^3.4.0",
+		"turbo": "^2.6.0",
+		"typescript": "^5.7.0",
+		"typescript-eslint": "^8.61.0"
+	}
 }
