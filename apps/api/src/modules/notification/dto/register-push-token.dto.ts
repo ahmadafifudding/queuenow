@@ -5,5 +5,5 @@ export class RegisterPushTokenDto {
   @ApiProperty({ description: 'Firebase Cloud Messaging (FCM) push token from device' })
   @IsString()
   @MinLength(1)
-  pushToken: string;
+  pushToken!: string;
 }

@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -171,11 +171,7 @@ export class AuthService {
     await this.prisma.session.delete({ where: { id: session.id } });
 
     // Generate new tokens
-    const tokens = await this.generateTokens(
-      session.user.id,
-      primaryRole.orgId,
-      primaryRole.role,
-    );
+    const tokens = await this.generateTokens(session.user.id, primaryRole.orgId, primaryRole.role);
 
     return { tokens };
   }
@@ -194,9 +190,9 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION', '7d'),
-    });
+    } as JwtSignOptions);
 
     // Store refresh token in DB
     const expiresAt = new Date();

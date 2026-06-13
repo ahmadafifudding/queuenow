@@ -1,0 +1,28 @@
+{
+	"name": "@queuenow/db",
+	"version": "1.0.0",
+	"private": true,
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"scripts": {
+		"generate": "prisma generate",
+		"build": "prisma generate && tsc",
+		"migrate": "prisma migrate dev",
+		"migrate:deploy": "prisma migrate deploy",
+		"push": "prisma db push",
+		"studio": "prisma studio",
+		"lint": "eslint src/"
+	},
+	"dependencies": {
+		"@prisma/adapter-pg": "^7.0.0",
+		"@prisma/client": "^7.0.0",
+		"pg": "^8.13.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.0.0",
+		"@types/pg": "^8.11.0",
+		"dotenv": "^16.4.0",
+		"prisma": "^7.0.0",
+		"typescript": "^5.7.0"
+	}
+}
