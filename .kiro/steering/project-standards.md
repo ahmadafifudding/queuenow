@@ -17,7 +17,7 @@ This is a multi-tenant SaaS Queue Management System built as a monorepo using Tu
 | Storage | Cloudflare R2 | |
 | Email | Resend | |
 | Logging | Winston + Sentry | |
-| Testing | Vitest (backend & frontend), Supertest (e2e) | Vitest latest |
+| Testing | Jest + Supertest (backend `apps/api`), Vitest (frontend `apps/web`) | Jest 29, Vitest latest |
 | API Docs | Swagger/OpenAPI (auto-generated) | |
 | Mobile | React Native (Expo SDK 56) | RN 0.85, React 19.2 |
 | Monorepo | Turborepo 2.6 + pnpm | |

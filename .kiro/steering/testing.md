@@ -1,13 +1,17 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: "**/*.spec.ts,**/*.test.ts,**/test/**"
+fileMatchPattern: "apps/api/**"
 ---
 
-# Testing Standards
+# Testing Standards (Backend / apps/api)
+
+> Scope: This applies to the NestJS backend (`apps/api`), which is a CommonJS project.
+> When the React (Vite) frontend `apps/web` is added, it should use **Vitest** with its
+> own steering file — do not apply Jest patterns there.
 
 ## Framework
 
-- Use Vitest (ESM-native, fast, compatible with `"type": "module"`)
+- Use **Jest** with `ts-jest` and `@nestjs/testing` (the NestJS default; deps already installed)
 - Test files co-located with source: `feature.service.spec.ts` next to `feature.service.ts`
 - Use `describe` / `it` blocks with descriptive names in English
 
@@ -38,15 +42,15 @@ fileMatchPattern: "**/*.spec.ts,**/*.test.ts,**/test/**"
 
 ```typescript
 const mockPrisma = {
-  user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+  user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
   queueTicket: {
-    findFirst: vi.fn(),
-    create: vi.fn(),
-    count: vi.fn(),
-    update: vi.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    count: jest.fn(),
+    update: jest.fn(),
   },
   // Add models as needed
-  $transaction: vi.fn((callback) => callback(mockPrisma)),
+  $transaction: jest.fn((callback) => callback(mockPrisma)),
 };
 ```
 
@@ -54,8 +58,8 @@ const mockPrisma = {
 
 ```typescript
 const mockJwtService = {
-  sign: vi.fn().mockReturnValue("mock-token"),
-  verify: vi
+  sign: jest.fn().mockReturnValue("mock-token"),
+  verify: jest
     .fn()
     .mockReturnValue({ sub: "user-id", orgId: "org-id", role: "OWNER" }),
 };
@@ -65,7 +69,7 @@ const mockJwtService = {
 
 ```typescript
 const mockConfigService = {
-  get: vi.fn((key: string) => {
+  get: jest.fn((key: string) => {
     const config: Record<string, string> = {
       JWT_ACCESS_SECRET: "test-secret",
       JWT_REFRESH_SECRET: "test-refresh-secret",
@@ -85,7 +89,7 @@ describe("AuthService", () => {
 
   beforeEach(() => {
     // Reset mocks
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     // Setup service with mocks
   });
 
@@ -118,7 +122,9 @@ describe("AuthService", () => {
 
 ## Running Tests
 
-- `pnpm test` — run all tests
-- `pnpm test:watch` — watch mode during development
-- `pnpm test:coverage` — generate coverage report
+Run from `apps/api` (or via the workspace filter):
+
+- `pnpm --filter @queue-system/api test` — run all tests
+- `pnpm --filter @queue-system/api test:watch` — watch mode during development
+- `pnpm --filter @queue-system/api test:cov` — generate coverage report
 - Target: >80% coverage on services, 100% on guards
