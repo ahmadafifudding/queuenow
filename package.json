@@ -27,5 +27,14 @@
 		"turbo": "^2.6.0",
 		"typescript": "^5.7.0",
 		"typescript-eslint": "^8.61.0"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"@prisma/client",
+			"@prisma/engines",
+			"bcrypt",
+			"esbuild",
+			"prisma"
+		]
 	}
 }

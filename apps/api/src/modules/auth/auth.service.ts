@@ -90,6 +90,7 @@ export class AuthService {
         id: result.organization.id,
         name: result.organization.name,
         slug: result.organization.slug,
+        role: 'OWNER',
       },
       tokens,
     };
@@ -154,7 +155,7 @@ export class AuthService {
     // Find session
     const session = await this.prisma.session.findUnique({
       where: { refreshToken },
-      include: { user: { include: { roles: true } } },
+      include: { user: { include: { roles: { include: { org: true } } } } },
     });
 
     if (!session || session.expiresAt < new Date()) {
@@ -173,7 +174,23 @@ export class AuthService {
     // Generate new tokens
     const tokens = await this.generateTokens(session.user.id, primaryRole.orgId, primaryRole.role);
 
-    return { tokens };
+    // Return the full session shape (ILoginResponse) so the web client can
+    // restore the user + organization + role on boot, not just the tokens.
+    return {
+      user: {
+        id: session.user.id,
+        email: session.user.email,
+        fullName: session.user.fullName,
+        avatarUrl: session.user.avatarUrl,
+      },
+      organization: {
+        id: primaryRole.org.id,
+        name: primaryRole.org.name,
+        slug: primaryRole.org.slug,
+        role: primaryRole.role,
+      },
+      tokens,
+    };
   }
 
   async logout(refreshToken: string) {

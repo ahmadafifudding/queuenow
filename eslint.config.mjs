@@ -20,6 +20,11 @@ export default tseslint.config(
       '**/coverage/**',
       // Prisma-generated artifacts and migrations are not hand-authored.
       'packages/database/prisma/**',
+      // Generated artifacts in apps/web are not hand-authored: the TanStack
+      // Router route tree and the openapi-typescript API schema. Excluding
+      // them keeps the strict no-`any` gate focused on hand-written code.
+      '**/routeTree.gen.ts',
+      'apps/web/src/lib/api/schema.d.ts',
     ],
   },
   js.configs.recommended,
@@ -34,6 +39,17 @@ export default tseslint.config(
       // while the codebase is still being built out.
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    },
+  },
+  {
+    // apps/web (R15.5): strict TypeScript quality gate — the web frontend must
+    // pass type checking with NO use of the `any` type. Unlike the rest of the
+    // monorepo (where `any` is a warning while code is built out), explicit
+    // `any` in hand-written web code is a hard error so the `typecheck` gate
+    // fails on it. Covers .tsx (React) in addition to .ts.
+    files: ['apps/web/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
 );

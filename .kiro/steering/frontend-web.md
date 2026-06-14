@@ -16,7 +16,7 @@ They extend `project-standards.md`; where this file is more specific, it wins.
 | Routing      | TanStack Router (file-based, type-safe)             |
 | Server state | TanStack Query                                      |
 | Client state | Zustand (minimal — UI/ephemeral state only)         |
-| Styling      | Tailwind CSS + shadcn/ui                            |
+| Styling      | Tailwind CSS + shadcn/ui (Base UI primitives)       |
 | Forms        | react-hook-form + `@hookform/resolvers/zod`         |
 | Validation   | Zod schemas from `@queuenow/shared-validation`      |
 | API types    | `openapi-typescript` generated from backend Swagger |
@@ -72,7 +72,7 @@ apps/web/src/
 │   ├── organization/
 │   └── display/
 ├── components/                # Shared, domain-agnostic UI
-│   └── ui/                    # shadcn/ui generated components
+│   └── ui/                    # shadcn/ui components (Base UI primitives)
 ├── lib/
 │   ├── api/                   # generated client + fetch wrapper
 │   │   ├── schema.d.ts        # openapi-typescript output (generated)
@@ -90,8 +90,8 @@ Rules:
 - `routes/` files stay thin: parse params, render a feature component.
 - A feature never imports from another feature's internals. Share via
   `components/`, `hooks/`, or `lib/`.
-- shadcn components live in `components/ui/` and are not edited ad-hoc; wrap them
-  for customization.
+- shadcn components (built on Base UI primitives) live in `components/ui/` and
+  are not edited ad-hoc; wrap them for customization.
 
 ## Environment Config
 
@@ -303,7 +303,7 @@ These public, on-site screens have different requirements from the dashboard.
 ## Accessibility
 
 - All interactive elements keyboard-reachable; visible focus states.
-- shadcn/Radix primitives provide ARIA — keep their semantics when wrapping.
+- shadcn/Base UI primitives provide ARIA — keep their semantics when wrapping.
 - Display (TV) screen: large type, high contrast, no reliance on color alone for
   "now serving" state.
 
