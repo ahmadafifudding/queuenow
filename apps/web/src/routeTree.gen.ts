@@ -21,6 +21,7 @@ import { Route as AuthenticatedServicesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedQueueRouteImport } from './routes/_authenticated/queue'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCountersRouteImport } from './routes/_authenticated/counters'
+import { Route as TrackOrgIdTicketIdRouteImport } from './routes/track.$orgId.$ticketId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -81,6 +82,11 @@ const AuthenticatedCountersRoute = AuthenticatedCountersRouteImport.update({
   path: '/counters',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const TrackOrgIdTicketIdRoute = TrackOrgIdTicketIdRouteImport.update({
+  id: '/track/$orgId/$ticketId',
+  path: '/track/$orgId/$ticketId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/staff': typeof AuthenticatedStaffRoute
   '/display/$orgId': typeof DisplayOrgIdRoute
   '/kiosk/$orgId': typeof KioskOrgIdRoute
+  '/track/$orgId/$ticketId': typeof TrackOrgIdTicketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/staff': typeof AuthenticatedStaffRoute
   '/display/$orgId': typeof DisplayOrgIdRoute
   '/kiosk/$orgId': typeof KioskOrgIdRoute
+  '/track/$orgId/$ticketId': typeof TrackOrgIdTicketIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/display/$orgId': typeof DisplayOrgIdRoute
   '/kiosk/$orgId': typeof KioskOrgIdRoute
+  '/track/$orgId/$ticketId': typeof TrackOrgIdTicketIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/display/$orgId'
     | '/kiosk/$orgId'
+    | '/track/$orgId/$ticketId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/display/$orgId'
     | '/kiosk/$orgId'
+    | '/track/$orgId/$ticketId'
   id:
     | '__root__'
     | '/'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/_authenticated/staff'
     | '/display/$orgId'
     | '/kiosk/$orgId'
+    | '/track/$orgId/$ticketId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -173,6 +185,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   DisplayOrgIdRoute: typeof DisplayOrgIdRoute
   KioskOrgIdRoute: typeof KioskOrgIdRoute
+  TrackOrgIdTicketIdRoute: typeof TrackOrgIdTicketIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -261,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCountersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/track/$orgId/$ticketId': {
+      id: '/track/$orgId/$ticketId'
+      path: '/track/$orgId/$ticketId'
+      fullPath: '/track/$orgId/$ticketId'
+      preLoaderRoute: typeof TrackOrgIdTicketIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -293,6 +313,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   DisplayOrgIdRoute: DisplayOrgIdRoute,
   KioskOrgIdRoute: KioskOrgIdRoute,
+  TrackOrgIdTicketIdRoute: TrackOrgIdTicketIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
