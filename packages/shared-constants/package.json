@@ -1,14 +1,16 @@
 {
-  "name": "@queuenow/shared-constants",
-  "version": "1.0.0",
-  "private": true,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "scripts": {
-    "build": "tsc",
-    "lint": "eslint src/"
-  },
-  "devDependencies": {
-    "typescript": "^5.7.0"
-  }
+	"name": "@queuenow/shared-constants",
+	"version": "1.0.0",
+	"private": true,
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"scripts": {
+		"build": "tsc",
+		"lint": "eslint src/",
+		"test": "vitest run --passWithNoTests"
+	},
+	"devDependencies": {
+		"typescript": "^5.7.0",
+		"vitest": "^2.1.8"
+	}
 }

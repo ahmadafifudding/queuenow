@@ -16,6 +16,11 @@ export type { QueueSettingsFormProps } from './components/QueueSettingsForm';
 export { DeleteOrganizationControl } from './components/DeleteOrganizationControl';
 export type { DeleteOrganizationControlProps } from './components/DeleteOrganizationControl';
 
+// Plan & Usage surface + manual plan-change dialog (R8, R6).
+export { PlanUsageView } from './components/PlanUsageView';
+export { PlanChangeDialog } from './components/PlanChangeDialog';
+export type { PlanChangeDialogProps } from './components/PlanChangeDialog';
+
 // Query / mutation hooks.
 export { useOrganization } from './api/useOrganization';
 export type { UseOrganizationOptions } from './api/useOrganization';
@@ -29,3 +34,11 @@ export { useDeleteOrganization } from './api/useDeleteOrganization';
 // Endpoints + types.
 export { organizationEndpoints } from './api/endpoints';
 export type { OrganizationBranding, OrganizationDetails, QueueSettings } from './types';
+
+// Plan-limit error handling (R8.5).
+export { isPlanLimitExceeded, onPlanLimitError } from './lib/plan-limit-error';
+export type { ShowUpgradePrompt } from './lib/plan-limit-error';
+export { showUpgradePrompt } from './lib/upgrade-prompt';
+
+// Pure plan-usage helpers (R8.2, R8.3, R8.4).
+export { formatUsage, atLimitResources, UNLIMITED_LABEL } from './lib/format-usage';

@@ -5,6 +5,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { PrismaModule } from './prisma/prisma.module';
 import { validateEnv } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
+import { PlanModule } from './modules/plan/plan.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { ServiceModule } from './modules/service/service.module';
 import { CounterModule } from './modules/counter/counter.module';
@@ -37,6 +38,9 @@ import { QrCodeModule } from './modules/qr-code/qr-code.module';
 
     // Database
     PrismaModule,
+
+    // Plan enforcement (global)
+    PlanModule,
 
     // Feature modules
     AuthModule,

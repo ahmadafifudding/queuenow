@@ -22,6 +22,8 @@ export const queryKeys = {
   orgStats: (orgId: string) => ['org-stats', orgId] as const,
   /** The organization record itself. */
   org: (orgId: string) => ['organization', orgId] as const,
+  /** The org's plan + per-resource usage projection (R8). */
+  planUsage: (orgId: string) => ['plan-usage', orgId] as const,
 } as const;
 
 export type QueryKeys = typeof queryKeys;

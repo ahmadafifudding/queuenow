@@ -1,0 +1,27 @@
+{
+	"moduleFileExtensions": ["js", "json", "ts"],
+	"rootDir": "..",
+	"testEnvironment": "node",
+	"testRegex": "test/.*\\.e2e-spec\\.ts$",
+	"setupFiles": ["<rootDir>/test/load-env.ts"],
+	"moduleNameMapper": {
+		"^@/(.*)$": "<rootDir>/src/$1"
+	},
+	"transform": {
+		"^.+\\.(t|j)s$": [
+			"ts-jest",
+			{
+				"tsconfig": {
+					"esModuleInterop": true,
+					"allowSyntheticDefaultImports": true,
+					"experimentalDecorators": true,
+					"emitDecoratorMetadata": true,
+					"isolatedModules": false,
+					"strict": true,
+					"skipLibCheck": true
+				}
+			}
+		]
+	},
+	"testTimeout": 60000
+}

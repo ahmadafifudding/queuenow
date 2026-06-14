@@ -7,12 +7,14 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueueGateway } from './queue.gateway';
 import { IAuthenticatedUser } from '../../common/interfaces';
+import { PlanLimitsService } from '../plan/plan-limits.service';
 
 @Injectable()
 export class QueueService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly queueGateway: QueueGateway,
+    private readonly planLimits: PlanLimitsService,
   ) {}
 
   /**
@@ -57,44 +59,58 @@ export class QueueService {
       }
     }
 
-    // Get or create daily counter for this service
+    // Server-local midnight key for the per-service daily counter (preserves the
+    // existing counter `date` keying — see the timezone note below).
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const dailyCounter = await this.prisma.dailyQueueCounter.upsert({
-      where: {
-        orgId_serviceId_date: { orgId, serviceId: dto.serviceId, date: today },
-      },
-      create: {
-        orgId,
-        serviceId: dto.serviceId,
-        date: today,
-        lastNumber: 1,
-      },
-      update: {
-        lastNumber: { increment: 1 },
-      },
-    });
+    // Plan-level daily-queue-volume enforcement (R2) is atomic with the create:
+    // the volume check, the counter increment, and the ticket create all run in
+    // ONE transaction so concurrent joins cannot both pass the check and
+    // overshoot `maxQueuePerDay`. The plan check runs FIRST, before any mutation,
+    // so a rejection leaves the daily counter (and therefore the measured volume)
+    // unchanged (R2.2).
+    const ticket = await this.prisma.$transaction(async (tx) => {
+      // R2.1/R2.2/R2.3: throws PlanLimitExceededException when the org's plan
+      // `maxQueuePerDay` would be exceeded; returns immediately when unlimited.
+      await this.planLimits.assertWithinDailyQueueLimit(tx, orgId);
 
-    // Generate ticket number: PREFIX + padded number (e.g., A001, B002)
-    const ticketNumber = `${service.prefix}${String(dailyCounter.lastNumber).padStart(3, '0')}`;
+      // Get or create daily counter for this service (monotonic created-count).
+      const dailyCounter = await tx.dailyQueueCounter.upsert({
+        where: {
+          orgId_serviceId_date: { orgId, serviceId: dto.serviceId, date: today },
+        },
+        create: {
+          orgId,
+          serviceId: dto.serviceId,
+          date: today,
+          lastNumber: 1,
+        },
+        update: {
+          lastNumber: { increment: 1 },
+        },
+      });
 
-    // Create the queue ticket
-    const ticket = await this.prisma.queueTicket.create({
-      data: {
-        orgId,
-        serviceId: dto.serviceId,
-        ticketNumber,
-        dailyNumber: dailyCounter.lastNumber,
-        status: 'WAITING',
-        customerName: dto.customerName,
-        customerPhone: dto.customerPhone,
-        customerProfileId: dto.customerProfileId,
-        deviceFingerprint: dto.deviceFingerprint,
-      },
-      include: {
-        service: { select: { id: true, name: true, prefix: true, avgServingTime: true } },
-      },
+      // Generate ticket number: PREFIX + padded number (e.g., A001, B002)
+      const ticketNumber = `${service.prefix}${String(dailyCounter.lastNumber).padStart(3, '0')}`;
+
+      // Create the queue ticket
+      return tx.queueTicket.create({
+        data: {
+          orgId,
+          serviceId: dto.serviceId,
+          ticketNumber,
+          dailyNumber: dailyCounter.lastNumber,
+          status: 'WAITING',
+          customerName: dto.customerName,
+          customerPhone: dto.customerPhone,
+          customerProfileId: dto.customerProfileId,
+          deviceFingerprint: dto.deviceFingerprint,
+        },
+        include: {
+          service: { select: { id: true, name: true, prefix: true, avgServingTime: true } },
+        },
+      });
     });
 
     // Calculate position in queue
@@ -113,7 +129,12 @@ export class QueueService {
     // Emit real-time update
     this.queueGateway.emitQueueUpdate(orgId, {
       type: 'TICKET_JOINED',
-      ticket: { id: ticket.id, ticketNumber, status: 'WAITING', serviceId: dto.serviceId },
+      ticket: {
+        id: ticket.id,
+        ticketNumber: ticket.ticketNumber,
+        status: 'WAITING',
+        serviceId: dto.serviceId,
+      },
     });
 
     return {
