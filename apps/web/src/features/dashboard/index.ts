@@ -3,4 +3,5 @@
  */
 export { DashboardHome } from './components/DashboardHome';
 export { useOrgStats } from './api/useOrgStats';
-export type { OrgStats } from './types';
+export { useQueueOverview } from './api/useQueueOverview';
+export type { OrgStats, QueueOverview, OverviewServiceStatus } from './types';
