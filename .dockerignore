@@ -1,0 +1,19 @@
+# Keep the Docker build context small and reproducible.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+.git
+.github
+**/*.log
+
+# Local env files — never bake secrets into an image.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Editor / OS cruft
+.vscode
+.idea
+.DS_Store

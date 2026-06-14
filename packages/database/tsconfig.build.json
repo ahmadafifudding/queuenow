@@ -1,0 +1,14 @@
+{
+  // Build config for @queuenow/db: emits the compiled client wrapper + types to
+  // dist/ (the package `main`/`types`). The base tsconfig.json keeps `noEmit`
+  // for editor/typecheck; this one actually produces the dist that consumers
+  // (apps/api) resolve. Without this, a fresh install has no dist and the API
+  // build cannot resolve @queuenow/db.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"]
+}
