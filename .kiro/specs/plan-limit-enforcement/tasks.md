@@ -244,8 +244,8 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Create `.kiro/specs/plan-limit-enforcement/uat-checklist.md` with steps for: per-resource allow-then-reject at the limit (R10.1); `null` ⇒ unlimited / "Unlimited" display (R10.2); upgrade-then-create-up-to-new-limit (R10.3); TV Display gating on/off (R10.4); Analytics gating on/off (R10.5); downgrade grandfathering + reject + re-permit after deletion (R10.6); direct API over-limit returns `PLAN_LIMIT_EXCEEDED` + HTTP 403 (R10.7)
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
 
-- [ ] 17. Final verification - full green build
-  - [ ] 17.1 Run frontend and backend test/build suites and fix any failures
+- [x] 17. Final verification - full green build
+  - [x] 17.1 Run frontend and backend test/build suites and fix any failures
     - Run `pnpm --filter @queuenow/web typecheck`, `pnpm --filter @queuenow/web test`, and `pnpm --filter @queuenow/web build`
     - Run the backend api test suite (`pnpm --filter @queuenow/api test`) including the property, unit, and integration tests
     - Resolve any type, lint, test, or build failures until everything is green
