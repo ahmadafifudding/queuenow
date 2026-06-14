@@ -25,6 +25,10 @@ export const customerRegisterSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
+export const switchOrganizationSchema = z.object({
+  orgId: z.string().uuid('Invalid organization ID'),
+});
+
 // ==========================================
 // ORGANIZATION SCHEMAS
 // ==========================================
@@ -39,7 +43,10 @@ export const updateOrganizationSchema = z.object({
 
 export const updateBrandingSchema = z.object({
   logoUrl: z.string().url().optional(),
-  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color').optional(),
+  primaryColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color')
+    .optional(),
   qrText: z.string().max(255).optional(),
 });
 
@@ -101,7 +108,10 @@ export const inviteStaffSchema = z.object({
 // ==========================================
 
 export const updateQueueSettingsSchema = z.object({
-  resetTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)').optional(),
+  resetTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)')
+    .optional(),
   maxRecall: z.number().int().min(1).max(5).optional(),
   requireName: z.boolean().optional(),
   requirePhone: z.boolean().optional(),
@@ -115,6 +125,7 @@ export const updateQueueSettingsSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CustomerRegisterInput = z.infer<typeof customerRegisterSchema>;
+export type SwitchOrganizationInput = z.infer<typeof switchOrganizationSchema>;
 export type UpdateOrganizationInput = z.infer<typeof updateOrganizationSchema>;
 export type UpdateBrandingInput = z.infer<typeof updateBrandingSchema>;
 export type CreateServiceInput = z.infer<typeof createServiceSchema>;

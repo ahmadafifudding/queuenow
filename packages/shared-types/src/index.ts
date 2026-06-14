@@ -205,6 +205,22 @@ export interface ILoginResponse {
   tokens: ITokenPair;
 }
 
+/**
+ * One organization membership entry returned by `GET /auth/organizations`.
+ * Shared element type consumed by both the backend `AuthService` and the web hooks.
+ */
+export interface OrganizationMembership {
+  id: string;
+  name: string;
+  slug: string;
+  /** `false` for organizations the user belongs to but that are inactive. */
+  isActive: boolean;
+  /** The requesting user's role within this organization. */
+  role: UserRoleType;
+  /** `true` for exactly the entry that is the user's currently active organization. */
+  active: boolean;
+}
+
 export interface ICustomerLoginResponse {
   customer: Pick<ICustomerProfile, 'id' | 'email' | 'phone' | 'fullName' | 'avatarUrl'>;
   tokens: ITokenPair;

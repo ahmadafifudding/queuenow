@@ -14,18 +14,28 @@
  *   test organization + OWNER per run so the dev database is not polluted.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { ValidationError } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import cookieParser from 'cookie-parser';
 import request from 'supertest';
 
 import { PlanType } from '@queuenow/db';
 
 import { AppModule } from '../../src/app.module';
+import { ValidationException } from '../../src/common/exceptions/validation.exception';
 import { HttpExceptionFilter } from '../../src/common/filters/http-exception.filter';
 import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
 import { PrismaService } from '../../src/prisma/prisma.service';
 
 /** Global prefix applied in `src/main.ts`; mirrored here so paths match prod. */
 export const API_PREFIX = 'api/v1';
+
+/**
+ * Password used for every test owner registered through `registerTestOwner`.
+ * Exported so suites can log the same owner back in (e.g. to capture a fresh
+ * `refresh_token` cookie) without duplicating the literal.
+ */
+export const TEST_OWNER_PASSWORD = 'SecurePassword123!';
 
 /** True when a real database connection string is configured. */
 export function isDatabaseAvailable(): boolean {
@@ -50,6 +60,10 @@ export async function createE2EApp(): Promise<E2EContext> {
 
   app.setGlobalPrefix(API_PREFIX);
 
+  // Mirror src/main.ts: parse cookies so the httpOnly `refresh_token` cookie is
+  // available on `req.cookies` for the auth refresh/switch flows.
+  app.use(cookieParser());
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -58,6 +72,8 @@ export async function createE2EApp(): Promise<E2EContext> {
       transformOptions: {
         enableImplicitConversion: true,
       },
+      exceptionFactory: (errors: ValidationError[]): ValidationException =>
+        new ValidationException(errors),
     }),
   );
 
@@ -100,7 +116,7 @@ export async function registerTestOwner(app: INestApplication): Promise<TestOwne
     .post(`/${API_PREFIX}/auth/register`)
     .send({
       email,
-      password: 'SecurePassword123!',
+      password: TEST_OWNER_PASSWORD,
       fullName: 'Plan Limit E2E Owner',
       organizationName: `Plan Limit E2E Org ${unique}`,
       organizationType: 'CLINIC',

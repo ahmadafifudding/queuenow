@@ -173,6 +173,24 @@ export const en = {
     },
   },
 
+  /**
+   * Organization switcher in the authenticated AppShell (R5). Lets a multi-org
+   * user see and change their active organization. All copy is centralized here
+   * so a second language (e.g. MS) can be added without touching the component.
+   */
+  orgSwitcher: {
+    /** Accessible label / heading for the switcher control (R5.1). */
+    label: 'Switch organization',
+    /** Badge shown beside an organization whose `isActive` is false (R5.1). */
+    inactiveBadge: 'Inactive',
+    /** Trigger/menu state while a switch request is in flight (R5.6). */
+    pending: 'Switching…',
+    /** Inline message when the organization list fails to load (R5.2). */
+    listFetchFailed: 'We couldn’t load your organizations.',
+    /** Fallback message when a switch request fails (R5.12). */
+    switchFailed: 'We couldn’t switch organizations. Please try again.',
+  },
+
   /** Staff queue-serving panel (R6). */
   queue: {
     title: 'Queue',

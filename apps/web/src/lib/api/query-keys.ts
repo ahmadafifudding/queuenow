@@ -24,6 +24,12 @@ export const queryKeys = {
   org: (orgId: string) => ['organization', orgId] as const,
   /** The org's plan + per-resource usage projection (R8). */
   planUsage: (orgId: string) => ['plan-usage', orgId] as const,
+  /**
+   * The current user's organization memberships. Deliberately user-scoped (NOT
+   * org-scoped) so the list survives an org switch and is not cleared by the
+   * post-switch org-scoped cache invalidation (org-switching R5.1, R5.10).
+   */
+  organizations: () => ['organizations'] as const,
 } as const;
 
 export type QueryKeys = typeof queryKeys;

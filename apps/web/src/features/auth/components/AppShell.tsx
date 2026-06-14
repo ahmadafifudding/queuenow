@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import type { FeatureFlag } from "@queuenow/shared-types";
 
+import { OrgSwitcher } from "@/features/auth/components/OrgSwitcher";
 import { RoleGate } from "@/features/auth/components/RoleGate";
 import type { Capability } from "@/features/auth/capabilities";
 import {
@@ -150,6 +151,12 @@ export interface AppShellProps {
 	 * wires the full `POST /auth/logout` + redirect.
 	 */
 	onSignOut?: () => void;
+	/**
+	 * Organization switcher mounted in the sidebar header beside the org name
+	 * (org-switching R5.1). Defaults to {@link OrgSwitcher}; pass `null` to omit
+	 * it (e.g. in tests or surfaces that should not expose switching).
+	 */
+	orgSwitcher?: ReactNode;
 }
 
 function defaultRenderNavLink(
@@ -175,6 +182,7 @@ export function AppShell({
 	navItems = DEFAULT_NAV_ITEMS,
 	renderNavLink = defaultRenderNavLink,
 	onSignOut,
+	orgSwitcher = <OrgSwitcher className="mt-3" />,
 }: AppShellProps): ReactNode {
 	const role = useActiveRole();
 	const planFeatures = usePlanFeatures();
@@ -245,6 +253,7 @@ export function AppShell({
 							{role}
 						</span>
 					) : null}
+					{orgSwitcher}
 				</div>
 				<div className="mt-4 flex-1">{navList}</div>
 

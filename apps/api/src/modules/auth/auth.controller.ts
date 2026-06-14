@@ -1,20 +1,27 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   HttpCode,
   HttpStatus,
   Res,
   Req,
+  UseGuards,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
+import type { ILoginResponse, OrganizationMembership } from '@queuenow/shared-types';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { SwitchOrganizationDto } from './dto/switch-organization.dto';
 import { Public } from '../../common/decorators/public.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { IAuthenticatedUser } from '../../common/interfaces';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 const REFRESH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -66,6 +73,38 @@ export class AuthController {
     }
     res.clearCookie(REFRESH_COOKIE_NAME, this.cookieOptions());
     return { message: 'Logged out successfully' };
+  }
+
+  @Get('organizations')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "List the current user's organization memberships" })
+  @ApiResponse({ status: 200, description: 'Organization memberships returned' })
+  async listOrganizations(
+    @CurrentUser() user: IAuthenticatedUser,
+  ): Promise<OrganizationMembership[]> {
+    return this.authService.listOrganizations(user.id, user.orgId);
+  }
+
+  @Post('switch-organization')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Switch the active organization and re-issue tokens' })
+  @ApiResponse({ status: 200, description: 'Organization switched successfully' })
+  async switchOrganization(
+    @CurrentUser() user: IAuthenticatedUser,
+    @Body() dto: SwitchOrganizationDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<Omit<ILoginResponse, 'tokens'> & { tokens: { accessToken: string } }> {
+    const presentedRefreshToken = this.extractRefreshToken(req);
+    const result = await this.authService.switchOrganization(
+      user.id,
+      dto.orgId,
+      presentedRefreshToken,
+    );
+    return this.respondWithRefreshCookie(res, result);
   }
 
   /**
