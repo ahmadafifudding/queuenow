@@ -63,6 +63,9 @@ const errors: Record<ErrorCode, string> = {
   [ERROR_CODES.CUSTOMER_NOT_FOUND]: 'We couldn’t find that customer.',
   [ERROR_CODES.CUSTOMER_EMAIL_EXISTS]: 'A customer with this email already exists.',
 
+  // Plan
+  [ERROR_CODES.PLAN_LIMIT_EXCEEDED]: "You've reached your plan's limit. Upgrade to add more.",
+
   // General
   [ERROR_CODES.VALIDATION_ERROR]:
     'Some of the information provided isn’t valid. Please check and try again.',
@@ -73,6 +76,18 @@ const errors: Record<ErrorCode, string> = {
 export const en = {
   /** Generic fallback shown when an error code is unknown or missing. */
   errorFallback: 'Something went wrong. Please try again.',
+
+  /**
+   * Upgrade prompt surfaced when the API rejects an action with
+   * `PLAN_LIMIT_EXCEEDED` (R8.5). The prompt invites the user to upgrade their
+   * plan; the user's unsaved input is intentionally retained (the form is not
+   * reset) so they can retry after upgrading.
+   */
+  upgradePrompt: {
+    title: "You've reached your plan's limit.",
+    description: 'Upgrade your plan to unlock more.',
+    action: 'Upgrade',
+  },
 
   common: {
     retry: 'Retry',
@@ -89,6 +104,7 @@ export const en = {
     queue: 'Queue',
     services: 'Services',
     counters: 'Counters',
+    display: 'Display',
     staff: 'Staff',
     settings: 'Settings',
     billing: 'Billing',
@@ -110,6 +126,8 @@ export const en = {
     signOut: 'Sign out',
     deleteOrganization: 'Delete organization',
     dangerZone: 'Danger zone',
+    /** Nav entry shown to OWNERs in place of a plan-gated surface (R9.4). */
+    upgrade: 'Upgrade',
   },
 
   /** Authentication surfaces (login / register forms and logout). */
@@ -414,6 +432,56 @@ export const en = {
       confirm: 'Permanently delete',
       cancel: 'Cancel',
       deleted: 'Organization deleted.',
+    },
+  },
+
+  /** Plan & Usage surface — current plan, per-resource usage, upgrade flow (R8, R6). */
+  plan: {
+    title: 'Plan & usage',
+    subtitle: 'Your current plan and how your usage compares to each limit.',
+    currentPlanLabel: 'Current plan',
+    usageHeading: 'Usage',
+    /** Shown in place of a numeric limit when the resource is unlimited (R8.3). */
+    unlimited: 'Unlimited',
+
+    // Data-region states (R8.6).
+    loadError: 'We couldn’t load your plan and usage.',
+    noOrganization: 'No active organization for this session.',
+
+    /** Human labels for each limited resource (keys match `NumericResource`). */
+    resources: {
+      services: 'Services',
+      counters: 'Counters',
+      staff: 'Staff members',
+      queuePerDay: 'Daily queue volume',
+    },
+
+    /** Human labels for each plan tier (keys match `PlanType`). */
+    planNames: {
+      FREE: 'Free',
+      BASIC: 'Basic',
+      PRO: 'Pro',
+      ENTERPRISE: 'Enterprise',
+    },
+
+    /** Per-resource at-limit upgrade prompt (R8.4). `{resource}` is replaced. */
+    atLimit: {
+      message: 'You’ve reached your {resource} limit.',
+      action: 'Upgrade plan',
+    },
+
+    /** OWNER-only manual plan-change dialog (R6, R8.4). */
+    changeDialog: {
+      trigger: 'Change plan',
+      title: 'Change your plan',
+      description: 'Choose the plan to switch your organization to.',
+      planLabel: 'Plan',
+      currentSuffix: '(current)',
+      submit: 'Change plan',
+      submitPending: 'Changing…',
+      cancel: 'Cancel',
+      close: 'Close',
+      success: 'Your plan has been updated.',
     },
   },
 

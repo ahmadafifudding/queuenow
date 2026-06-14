@@ -24,20 +24,25 @@ import {
 	type LucideIcon,
 	ListOrdered,
 	Menu,
+	MonitorPlay,
 	Settings,
+	Sparkles,
 	SquareStack,
 	Trash2,
 	Users,
 	Wrench,
 	X,
 } from "lucide-react";
+import type { FeatureFlag } from "@queuenow/shared-types";
 
 import { RoleGate } from "@/features/auth/components/RoleGate";
+import type { Capability } from "@/features/auth/capabilities";
 import {
-	type Capability,
-	roleHasCapability,
-} from "@/features/auth/capabilities";
+	isNavItemVisible,
+	shouldShowUpgradeEntry,
+} from "@/features/auth/nav-visibility";
 import { useActiveRole } from "@/features/auth/hooks/useHasRole";
+import { usePlanFeatures } from "@/features/auth/hooks/usePlanFeatures";
 import { useAuthStore } from "@/features/auth/stores/auth-store";
 import { strings } from "@/i18n";
 import { cn } from "@/lib/utils";
@@ -57,6 +62,12 @@ export interface AppShellNavItem {
 	 * any authenticated role (e.g. the Dashboard home).
 	 */
 	capability?: Capability;
+	/**
+	 * Plan feature flag gating this item. When set, the item is only shown while
+	 * the org's plan enables the flag; when the flag is disabled, OWNERs see an
+	 * upgrade entry in its place (Requirements 9.1–9.4). Omitted ⇒ not plan-gated.
+	 */
+	featureFlag?: FeatureFlag;
 }
 
 /**
@@ -91,6 +102,14 @@ export const DEFAULT_NAV_ITEMS: readonly AppShellNavItem[] = [
 		href: "/counters",
 		icon: SquareStack,
 		capability: "manage-services-counters",
+	},
+	{
+		key: "display",
+		label: strings.nav.display,
+		href: "/display",
+		icon: MonitorPlay,
+		capability: "manage-org-settings",
+		featureFlag: "tvDisplay",
 	},
 	{
 		key: "staff",
@@ -158,17 +177,30 @@ export function AppShell({
 	onSignOut,
 }: AppShellProps): ReactNode {
 	const role = useActiveRole();
+	const planFeatures = usePlanFeatures();
 	const organization = useAuthStore((state) => state.organization);
 	const user = useAuthStore((state) => state.user);
 	const clear = useAuthStore((state) => state.clear);
 	const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-	// Capability-driven visibility: an item is shown when it has no capability
-	// requirement or when the active role satisfies the matrix (Requirement 5.3).
-	const visibleNavItems = navItems.filter(
-		(item) =>
-			item.capability === undefined || roleHasCapability(role, item.capability),
+	// Capability- and plan-driven visibility: an item shows when the active role
+	// satisfies its capability AND (it is not plan-gated or its feature flag is
+	// not known-disabled). Mirrors the API feature gates (Requirements 9.1–9.3).
+	const visibleNavItems = navItems.filter((item) =>
+		isNavItemVisible(item, role, planFeatures),
 	);
+
+	// In place of each hidden gated surface, OWNERs see an upgrade entry that
+	// points at the Plan & Usage section (Requirement 9.4). Presentation only —
+	// the API remains the enforcement boundary (R9.5).
+	const upgradeNavItems: AppShellNavItem[] = navItems
+		.filter((item) => shouldShowUpgradeEntry(item, role, planFeatures))
+		.map((item) => ({
+			key: `upgrade-${item.key}`,
+			label: strings.shell.upgrade,
+			href: "/billing",
+			icon: Sparkles,
+		}));
 
 	const handleSignOut = onSignOut ?? clear;
 
@@ -178,6 +210,16 @@ export function AppShell({
 			className="flex flex-col gap-1"
 		>
 			{visibleNavItems.map((item) => {
+				const Icon = item.icon;
+				const content = (
+					<>
+						<Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+						<span>{item.label}</span>
+					</>
+				);
+				return <div key={item.key}>{renderNavLink(item, content)}</div>;
+			})}
+			{upgradeNavItems.map((item) => {
 				const Icon = item.icon;
 				const content = (
 					<>

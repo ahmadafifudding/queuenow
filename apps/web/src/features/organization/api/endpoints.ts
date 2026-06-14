@@ -34,4 +34,8 @@ export const organizationEndpoints = {
   stats: (orgId: string): string => `/organizations/${orgId}/stats`,
   /** DELETE the organization (OWNER only, R11.7). See ASSUMPTION above. */
   delete: (orgId: string): string => `/organizations/${orgId}`,
+  /** GET the org's plan + per-resource usage projection (OWNER / ADMIN, R8). */
+  planUsage: (orgId: string): string => `/organizations/${orgId}/plan-usage`,
+  /** PATCH the org's plan — interim manual upgrade path (OWNER only, R6). */
+  changePlan: (orgId: string): string => `/organizations/${orgId}/plan`,
 } as const;

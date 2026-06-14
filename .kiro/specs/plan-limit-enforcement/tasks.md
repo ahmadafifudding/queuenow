@@ -187,60 +187,60 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Via Supertest (no UI), create an over-limit resource and assert the response envelope has `error.code === 'PLAN_LIMIT_EXCEEDED'` and HTTP status 403
     - _Requirements: 10.7_
 
-- [ ] 13. Frontend: query keys, hooks, and error mapping
-  - [ ] 13.1 Add `planUsage` query key and `usePlanUsage`/`useChangePlan` hooks
+- [x] 13. Frontend: query keys, hooks, and error mapping
+  - [x] 13.1 Add `planUsage` query key and `usePlanUsage`/`useChangePlan` hooks
     - Add `planUsage(orgId)` to `apps/web/src/lib/api/query-keys.ts`
     - Create `features/organization/api/usePlanUsage.ts` (`useQuery` for `GET :id/plan-usage`)
     - Create `features/organization/api/useChangePlan.ts` (`useMutation` `PATCH :id/plan`) invalidating `planUsage`, the org query, and gated lists
     - _Requirements: 8.1, 8.2, 8.3, 8.6, 6.1, 6.7_
 
-  - [ ] 13.2 Map `PLAN_LIMIT_EXCEEDED` and add `onPlanLimitError` helper
+  - [x] 13.2 Map `PLAN_LIMIT_EXCEEDED` and add `onPlanLimitError` helper
     - Add friendly copy for `PLAN_LIMIT_EXCEEDED` in `lib/api/error-map.ts` and `i18n/en.ts`
     - Add a shared `onPlanLimitError` helper that, when `ApiError.code === 'PLAN_LIMIT_EXCEEDED'`, shows the upgrade prompt and does not reset the form (retains unsaved input)
     - _Requirements: 8.5_
 
-  - [ ]\* 13.3 Write property test for the upgrade-prompt classifier
+  - [x]\* 13.3 Write property test for the upgrade-prompt classifier
     - **Property 12: Upgrade prompt is triggered exactly by PLAN_LIMIT_EXCEEDED**
     - For any API error, the classifier returns `true` iff `code === 'PLAN_LIMIT_EXCEEDED'`
     - **Validates: Requirements 8.5**
 
-- [ ] 14. Frontend: Plan & Usage view and plan-change dialog
-  - [ ] 14.1 Implement the usage formatter and `PlanUsageView`
+- [x] 14. Frontend: Plan & Usage view and plan-change dialog
+  - [x] 14.1 Implement the usage formatter and `PlanUsageView`
     - Add a pure formatter returning `"{usage} / {limit}"` for numeric limits and `"Unlimited"` for `null`
     - Create `features/organization/components/PlanUsageView.tsx` rendering plan name, per-resource usage/limit, per-resource upgrade prompt for at-limit resources, and an error indication (no usage values) on query failure
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.6_
 
-  - [ ]\* 14.2 Write property test for usage formatting
+  - [x]\* 14.2 Write property test for usage formatting
     - **Property 10: Usage formatting renders the limit or "Unlimited"**
     - For any non-negative usage/limit, returns `"{usage} / {limit}"` for numeric and `"Unlimited"` for `null`
     - **Validates: Requirements 8.2, 8.3**
 
-  - [ ]\* 14.3 Write property test for at-limit upgrade prompts
+  - [x]\* 14.3 Write property test for at-limit upgrade prompts
     - **Property 11: Upgrade prompts appear exactly for at-limit resources**
     - For any plan-usage projection, the set of resources showing an upgrade prompt equals the set whose limit is numeric and `usage >= limit`
     - **Validates: Requirements 8.4**
 
-  - [ ] 14.4 Implement `PlanChangeDialog`
+  - [x] 14.4 Implement `PlanChangeDialog`
     - Create `features/organization/components/PlanChangeDialog.tsx` (OWNER-only target-plan picker) wired to `useChangePlan`
     - _Requirements: 6.1, 8.4, 9.4_
 
-  - [ ]\* 14.5 Write unit tests for `PlanUsageView` states
+  - [x]\* 14.5 Write unit tests for `PlanUsageView` states
     - Renders plan name (R8.1); shows error indication with no usage values on query failure (R8.6)
     - _Requirements: 8.1, 8.6_
 
-- [ ] 15. Frontend: feature-gate mirroring in navigation
-  - [ ] 15.1 Implement `usePlanFeatures` and `AppShell` feature gating
+- [x] 15. Frontend: feature-gate mirroring in navigation
+  - [x] 15.1 Implement `usePlanFeatures` and `AppShell` feature gating
     - Add `usePlanFeatures()` in `features/auth/capabilities.ts` resolving `{tvDisplay, analytics}` from `planUsage.features`
     - Add optional `featureFlag?: FeatureFlag` to `AppShellNavItem`; update `visibleNavItems` to keep an item only when capability is satisfied AND (no `featureFlag` or the flag is true); render an OWNER upgrade entry in place of a hidden gated surface
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-  - [ ]\* 15.2 Write property test for navigation visibility
+  - [x]\* 15.2 Write property test for navigation visibility
     - **Property 13: Navigation visibility mirrors capability and plan feature flags**
     - For any role and set of feature flags, a plan-only item is visible iff the role satisfies its capability and its flag is enabled; an upgrade entry appears iff the role is OWNER and the surface's flag is disabled
     - **Validates: Requirements 9.1, 9.2, 9.3, 9.4**
 
-- [ ] 16. Author the UAT/demo checklist
-  - [ ] 16.1 Write `uat-checklist.md` covering R10.1–R10.7
+- [x] 16. Author the UAT/demo checklist
+  - [x] 16.1 Write `uat-checklist.md` covering R10.1–R10.7
     - Create `.kiro/specs/plan-limit-enforcement/uat-checklist.md` with steps for: per-resource allow-then-reject at the limit (R10.1); `null` ⇒ unlimited / "Unlimited" display (R10.2); upgrade-then-create-up-to-new-limit (R10.3); TV Display gating on/off (R10.4); Analytics gating on/off (R10.5); downgrade grandfathering + reject + re-permit after deletion (R10.6); direct API over-limit returns `PLAN_LIMIT_EXCEEDED` + HTTP 403 (R10.7)
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
 
