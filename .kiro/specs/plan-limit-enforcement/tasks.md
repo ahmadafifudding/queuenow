@@ -96,16 +96,16 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
 - [x] 5. Checkpoint - enforcement core
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Wire atomic numeric-limit enforcement into create flows
-  - [ ] 6.1 Enforce `maxServices` in `ServiceService.create`
+- [x] 6. Wire atomic numeric-limit enforcement into create flows
+  - [x] 6.1 Enforce `maxServices` in `ServiceService.create`
     - Wrap the create in `prisma.$transaction` at `Serializable` isolation, call `assertWithinNumericLimit(tx, orgId, 'services')` before `tx.service.create`, keep existing uniqueness checks inside the tx; add a `runSerializable()` retry-once wrapper for `40001` serialization failures
     - _Requirements: 1.1, 1.2, 1.3, 1.5, 1.6_
 
-  - [ ] 6.2 Enforce `maxCounters` in `CounterService.create`
+  - [x] 6.2 Enforce `maxCounters` in `CounterService.create`
     - Same transactional pattern calling `assertWithinNumericLimit(tx, orgId, 'counters')`
     - _Requirements: 1.1, 1.2, 1.3, 1.5, 1.6_
 
-  - [ ] 6.3 Enforce `maxStaff` in `StaffService` invite/add flow
+  - [x] 6.3 Enforce `maxStaff` in `StaffService` invite/add flow
     - Wrap invite/add in the Serializable transaction, call `assertWithinNumericLimit(tx, orgId, 'staff')` (count = existing `UserRole` rows + `PENDING` invitations), and create the invitation/role inside the same tx
     - _Requirements: 1.1, 1.2, 1.3, 1.5, 1.6_
 
@@ -113,12 +113,12 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Assert allow below limit, reject with `PLAN_LIMIT_EXCEEDED` at/over limit, usage unchanged on reject, and `null` ⇒ unlimited; for staff assert pending invitations count toward `maxStaff`
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 7. Wire daily-queue-volume enforcement into the join flow
-  - [ ] 7.1 Enforce `maxQueuePerDay` in `QueueService.joinQueue`
+- [x] 7. Wire daily-queue-volume enforcement into the join flow
+  - [x] 7.1 Enforce `maxQueuePerDay` in `QueueService.joinQueue`
     - Inside `joinQueue`'s transaction, call `assertWithinDailyQueueLimit(tx, orgId)` before creating the ticket; increment `DailyQueueCounter.lastNumber` and create the ticket in the same tx so the check and create are atomic
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-  - [ ]\* 7.2 Write unit tests for daily-volume enforcement
+  - [x]\* 7.2 Write unit tests for daily-volume enforcement
     - Assert allow below `maxQueuePerDay`, reject with `PLAN_LIMIT_EXCEEDED` at/over, `null` ⇒ unlimited, and window boundary behavior using `resolveDailyWindow`
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
@@ -128,7 +128,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Create `apps/api/src/common/guards/plan-feature.guard.ts` resolving `orgId` from `req.params.orgId ?? req.user.orgId`, throwing `OrgNotFoundException` when missing/unknown (decided before the feature check), and `PlanLimitExceededException` when `isFeatureEnabled` is false
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 4.1, 4.2_
 
-  - [ ] 8.2 Apply the gate to TV Display (public by orgId)
+  - [x] 8.2 Apply the gate to TV Display (public by orgId)
     - Add `@UseGuards(PlanFeatureGuard)` + `@RequiresFeature('tvDisplay')` to the public `DisplayController`; ensure `ORG_NOT_FOUND` precedence over the feature check for unknown orgId
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
 

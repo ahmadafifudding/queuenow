@@ -1,37 +1,46 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IAuthenticatedUser } from '../../common/interfaces';
+import { runSerializable } from '../../common/prisma/run-serializable';
+import { PlanLimitsService } from '../plan/plan-limits.service';
 
 @Injectable()
 export class CounterService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly planLimits: PlanLimitsService,
+  ) {}
 
   async create(orgId: string, dto: any, user: IAuthenticatedUser) {
     this.validateOrgAccess(orgId, user);
 
-    // Verify service exists within org
-    const service = await this.prisma.service.findFirst({
-      where: { id: dto.serviceId, orgId },
-    });
+    // Enforce `maxCounters` and create atomically: the plan-limit count and the
+    // create run in one `Serializable` transaction (retry-once on serialization
+    // failure) so concurrent creates cannot both pass the check and overshoot
+    // the limit (R1.1, R1.2, R1.3, R1.5, R1.6).
+    return runSerializable(this.prisma, async (tx) => {
+      await this.planLimits.assertWithinNumericLimit(tx, orgId, 'counters');
 
-    if (!service) {
-      throw new NotFoundException('Service not found in this organization');
-    }
+      // Verify service exists within org (kept inside the tx).
+      const service = await tx.service.findFirst({
+        where: { id: dto.serviceId, orgId },
+      });
 
-    return this.prisma.counter.create({
-      data: {
-        orgId,
-        serviceId: dto.serviceId,
-        name: dto.name,
-        isActive: dto.isActive ?? true,
-      },
-      include: {
-        service: { select: { id: true, name: true, prefix: true } },
-      },
+      if (!service) {
+        throw new NotFoundException('Service not found in this organization');
+      }
+
+      return tx.counter.create({
+        data: {
+          orgId,
+          serviceId: dto.serviceId,
+          name: dto.name,
+          isActive: dto.isActive ?? true,
+        },
+        include: {
+          service: { select: { id: true, name: true, prefix: true } },
+        },
+      });
     });
   }
 
