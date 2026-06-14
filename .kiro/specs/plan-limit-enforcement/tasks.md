@@ -122,7 +122,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Assert allow below `maxQueuePerDay`, reject with `PLAN_LIMIT_EXCEEDED` at/over, `null` ⇒ unlimited, and window boundary behavior using `resolveDailyWindow`
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 8. Implement the feature-gate guard and decorator
+- [x] 8. Implement the feature-gate guard and decorator
   - [x] 8.1 Implement `@RequiresFeature` decorator and `PlanFeatureGuard`
     - Create `apps/api/src/common/decorators/requires-feature.decorator.ts` (`SetMetadata(REQUIRES_FEATURE_KEY, flag)`)
     - Create `apps/api/src/common/guards/plan-feature.guard.ts` resolving `orgId` from `req.params.orgId ?? req.user.orgId`, throwing `OrgNotFoundException` when missing/unknown (decided before the feature check), and `PlanLimitExceededException` when `isFeatureEnabled` is false
@@ -132,7 +132,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Add `@UseGuards(PlanFeatureGuard)` + `@RequiresFeature('tvDisplay')` to the public `DisplayController`; ensure `ORG_NOT_FOUND` precedence over the feature check for unknown orgId
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-  - [ ] 8.3 Apply the gate to the analytics/stats surface (authenticated)
+  - [x] 8.3 Apply the gate to the analytics/stats surface (authenticated)
     - Add `@RequiresFeature('analytics')` + `PlanFeatureGuard` to the existing authenticated `GET /organizations/:id/stats` surface (behind `JwtAuthGuard`), resolving `orgId` from `user.orgId`
     - _Requirements: 4.1, 4.2, 4.3_
 
@@ -140,13 +140,13 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - TV Display: `ORG_NOT_FOUND` for unknown orgId (precedence), `PLAN_LIMIT_EXCEEDED` when `tvDisplay` false, allow when true; Analytics: `AUTH_UNAUTHORIZED` for anonymous, `PLAN_LIMIT_EXCEEDED` when `analytics` false
     - _Requirements: 3.1, 3.3, 3.4, 4.1, 4.3_
 
-- [ ] 9. Implement the manual plan-change endpoint
-  - [ ] 9.1 Implement `ChangePlanDto` and `OrganizationService.changePlan`
+- [x] 9. Implement the manual plan-change endpoint
+  - [x] 9.1 Implement `ChangePlanDto` and `OrganizationService.changePlan`
     - Create `apps/api/src/modules/organization/dto/change-plan.dto.ts` validating `plan` ∈ `{FREE,BASIC,PRO,ENTERPRISE}` (enum)
     - Implement `changePlan(id, plan, user)`: validate org-scope access, `findUnique` ⇒ `OrgNotFoundException` if missing, return unchanged org when `org.plan === plan` (idempotent), else `organization.update({ data: { plan } })` returning the updated org; perform no side effects on existing resources
     - _Requirements: 6.1, 6.5, 6.6, 6.7, 5.1, 5.4_
 
-  - [ ] 9.2 Add `PATCH /organizations/:id/plan` (OWNER-only)
+  - [x] 9.2 Add `PATCH /organizations/:id/plan` (OWNER-only)
     - Add the `changePlan` handler to `OrganizationController` with `@Roles('OWNER')` behind `JwtAuthGuard` + `RolesGuard`; non-OWNER ⇒ `AUTH_FORBIDDEN`, anon ⇒ `AUTH_UNAUTHORIZED`, invalid plan ⇒ `VALIDATION_ERROR`
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
 
@@ -165,12 +165,12 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - `AUTH_FORBIDDEN` for ADMIN/STAFF (plan unchanged), `AUTH_UNAUTHORIZED` for anonymous, `VALIDATION_ERROR` for non-enum target, `ORG_NOT_FOUND` for missing org; over-limit existing resources remain readable/updatable (R5.3)
     - _Requirements: 6.2, 6.3, 6.4, 6.5, 5.3_
 
-- [ ] 10. Implement the plan-usage endpoint
-  - [ ] 10.1 Add `GET /organizations/:id/plan-usage` (OWNER/ADMIN)
+- [x] 10. Implement the plan-usage endpoint
+  - [x] 10.1 Add `GET /organizations/:id/plan-usage` (OWNER/ADMIN)
     - Add the handler to `OrganizationController` behind `JwtAuthGuard` + `RolesGuard('OWNER','ADMIN')` delegating to `PlanLimitsService.getPlanUsage`, returning `PlanUsageResponse` (plan + per-resource usage/limit/atLimit + features)
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-  - [ ]\* 10.2 Write unit test for the plan-usage endpoint contract
+  - [x]\* 10.2 Write unit test for the plan-usage endpoint contract
     - Assert response includes plan, features record, and a resource entry per `NumericResource` with correct `atLimit`/`limit` (null ⇒ unlimited)
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 

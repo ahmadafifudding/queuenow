@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PlanType } from '@queuenow/shared-types';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OrgNotFoundException } from '../../common/exceptions/org-not-found.exception';
 import { UpdateOrganizationDto, UpdateBrandingDto, UpdateSettingsDto } from './dto';
 
 @Injectable()
@@ -136,10 +138,18 @@ export class OrganizationService {
     today.setHours(0, 0, 0, 0);
 
     const [waiting, serving, completed, skipped] = await Promise.all([
-      this.prisma.queueTicket.count({ where: { orgId: id, status: 'WAITING', createdAt: { gte: today } } }),
-      this.prisma.queueTicket.count({ where: { orgId: id, status: 'SERVING', createdAt: { gte: today } } }),
-      this.prisma.queueTicket.count({ where: { orgId: id, status: 'COMPLETED', createdAt: { gte: today } } }),
-      this.prisma.queueTicket.count({ where: { orgId: id, status: 'SKIPPED', createdAt: { gte: today } } }),
+      this.prisma.queueTicket.count({
+        where: { orgId: id, status: 'WAITING', createdAt: { gte: today } },
+      }),
+      this.prisma.queueTicket.count({
+        where: { orgId: id, status: 'SERVING', createdAt: { gte: today } },
+      }),
+      this.prisma.queueTicket.count({
+        where: { orgId: id, status: 'COMPLETED', createdAt: { gte: today } },
+      }),
+      this.prisma.queueTicket.count({
+        where: { orgId: id, status: 'SKIPPED', createdAt: { gte: today } },
+      }),
     ]);
 
     return {
@@ -149,6 +159,39 @@ export class OrganizationService {
       skipped,
       total: waiting + serving + completed + skipped,
     };
+  }
+
+  /**
+   * Manually change an organization's plan (R6).
+   *
+   * Validates org-scope access, then loads the organization (R6.5 →
+   * `OrgNotFoundException` if missing). If the target `plan` already matches the
+   * current plan, the organization is returned unchanged (R6.6, idempotent).
+   * Otherwise the plan is persisted and the updated organization is returned
+   * with `plan` equal to the target (R6.1).
+   *
+   * No side effects are applied to existing Services/Counters/Staff/tickets —
+   * grandfathering (R5.1, R5.4) is a consequence of enforcement reading usage
+   * only at create-time. Subsequent enforcement decisions read the freshly
+   * persisted plan (R6.7).
+   */
+  async changePlan(id: string, plan: PlanType, userOrgId: string) {
+    this.validateAccess(id, userOrgId);
+
+    const org = await this.prisma.organization.findUnique({ where: { id } });
+
+    if (!org) {
+      throw new OrgNotFoundException();
+    }
+
+    if (org.plan === plan) {
+      return org;
+    }
+
+    return this.prisma.organization.update({
+      where: { id },
+      data: { plan },
+    });
   }
 
   private validateAccess(id: string, userOrgId: string): void {
