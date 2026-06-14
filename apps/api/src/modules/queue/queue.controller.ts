@@ -16,7 +16,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
-import { JoinQueueDto, CallNextDto } from './dto';
+import { JoinQueueDto, CallNextDto, CancelTicketDto } from './dto';
 import { IAuthenticatedUser } from '../../common/interfaces';
 
 @ApiTags('Queue')
@@ -112,14 +112,27 @@ export class QueueController {
   }
 
   @Public()
+  @Post('ticket/:ticketId/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cancel/leave your own WAITING ticket (public - ownership-scoped, no auth required)',
+  })
+  @ApiParam({ name: 'orgId', description: 'Organization ID' })
+  @ApiParam({ name: 'ticketId', description: 'Ticket ID' })
+  async cancelTicket(
+    @Param('orgId') orgId: string,
+    @Param('ticketId') ticketId: string,
+    @Body() dto: CancelTicketDto,
+  ) {
+    return this.queueService.cancelTicket(orgId, ticketId, dto);
+  }
+
+  @Public()
   @Get('status')
   @ApiOperation({ summary: 'Get current queue status (public)' })
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
   @ApiQuery({ name: 'serviceId', required: false, description: 'Filter by service' })
-  async getCurrentStatus(
-    @Param('orgId') orgId: string,
-    @Query('serviceId') serviceId?: string,
-  ) {
+  async getCurrentStatus(@Param('orgId') orgId: string, @Query('serviceId') serviceId?: string) {
     return this.queueService.getCurrentStatus(orgId, serviceId);
   }
 
@@ -128,10 +141,7 @@ export class QueueController {
   @ApiOperation({ summary: 'Get ticket status by ID (public - for customer tracking)' })
   @ApiParam({ name: 'orgId', description: 'Organization ID' })
   @ApiParam({ name: 'ticketId', description: 'Ticket ID' })
-  async getTicketStatus(
-    @Param('orgId') orgId: string,
-    @Param('ticketId') ticketId: string,
-  ) {
+  async getTicketStatus(@Param('orgId') orgId: string, @Param('ticketId') ticketId: string) {
     return this.queueService.getTicketStatus(orgId, ticketId);
   }
 }

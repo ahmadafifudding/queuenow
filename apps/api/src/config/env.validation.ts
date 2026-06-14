@@ -48,6 +48,17 @@ const envSchema = z.object({
   // Observability (optional)
   SENTRY_DSN: z.string().optional(),
 
+  // Push notifications (Expo Push) — optional integration.
+  // Delivery is disabled by default; when EXPO_PUSH_ENABLED is not "true" the
+  // NotificationService degrades to a no-op (records + logs) without throwing.
+  // EXPO_ACCESS_TOKEN is optional even when enabled (Expo accepts unauthenticated
+  // sends), so neither value is mandatory at boot.
+  EXPO_PUSH_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  EXPO_ACCESS_TOKEN: z.string().optional(),
+
   // CORS — comma-separated list of allowed origins
   CORS_ORIGINS: z.string().default(''),
 

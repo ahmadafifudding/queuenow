@@ -15,7 +15,7 @@ import { CustomerService } from './customer.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { RegisterCustomerDto, LoginCustomerDto, UpdateProfileDto } from './dto';
+import { RegisterCustomerDto, LoginCustomerDto, UpdateProfileDto, RefreshCustomerDto } from './dto';
 import { IAuthenticatedCustomer } from '../../common/interfaces';
 
 @ApiTags('Customers')
@@ -36,6 +36,16 @@ export class CustomerController {
   @ApiOperation({ summary: 'Customer login with email/phone and password' })
   async login(@Body() dto: LoginCustomerDto) {
     return this.customerService.login(dto);
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Rotate customer tokens using a refresh token (mobile, body-based)',
+  })
+  async refresh(@Body() dto: RefreshCustomerDto) {
+    return this.customerService.refreshToken(dto.refreshToken);
   }
 
   @Get('profile')

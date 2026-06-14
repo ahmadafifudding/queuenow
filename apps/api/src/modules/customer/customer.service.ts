@@ -6,8 +6,20 @@ import {
 } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import type { ICustomerLoginResponse } from '@queuenow/shared-types';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuthUnauthorizedException } from '../../common/exceptions/auth-unauthorized.exception';
+import { AuthTokenExpiredException } from '../../common/exceptions/auth-token-expired.exception';
+
+/**
+ * Claims encoded in the customer Refresh_Token JWT, signed by
+ * {@link CustomerService.generateTokens} as `{ sub, type: 'customer' }`.
+ */
+interface CustomerRefreshClaims {
+  sub: string;
+  type: string;
+}
 
 @Injectable()
 export class CustomerService {
@@ -197,6 +209,78 @@ export class CustomerService {
     await this.prisma.customerFavorite.deleteMany({
       where: { customerId, orgId },
     });
+  }
+
+  /**
+   * Rotates a customer session from a presented Refresh_Token (held in mobile
+   * secure storage and sent in the request body, R12.2). Verifies the refresh
+   * JWT against `JWT_REFRESH_SECRET`, validates the backing `CustomerSession`,
+   * deletes that session, and issues a fresh token pair via `generateTokens`
+   * (which persists the replacement session). Returns the same shape as login
+   * (`ICustomerLoginResponse`).
+   *
+   * - Expired refresh JWT or expired session → `AUTH_TOKEN_EXPIRED`.
+   * - Malformed/unknown token, no backing session, or claim mismatch →
+   *   `AUTH_UNAUTHORIZED`.
+   *
+   * Either way the mobile client clears its tokens and routes to sign-in (R12.4).
+   */
+  async refreshToken(refreshToken: string): Promise<ICustomerLoginResponse> {
+    // 1. Verify the refresh JWT signature/expiry against JWT_REFRESH_SECRET
+    //    (the secret CustomerService.generateTokens signs refresh tokens with).
+    let claims: CustomerRefreshClaims;
+    try {
+      claims = this.jwtService.verify<CustomerRefreshClaims>(refreshToken, {
+        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'TokenExpiredError') {
+        throw new AuthTokenExpiredException('Refresh token has expired');
+      }
+      throw new AuthUnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // 2. A customer refresh token must carry the customer token type.
+    if (claims.type !== 'customer') {
+      throw new AuthUnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // 3. Find the CustomerSession backing the presented token, loading the
+    //    customer so the response can mirror the login shape.
+    const session = await this.prisma.customerSession.findUnique({
+      where: { refreshToken },
+      include: { customer: true },
+    });
+
+    // No backing session (e.g. already rotated/revoked) or claim mismatch →
+    // unauthorized.
+    if (!session || session.customerId !== claims.sub) {
+      throw new AuthUnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // Expired session → token-expired so the client re-authenticates. Clean up
+    // the stale row before bailing out.
+    if (session.expiresAt < new Date()) {
+      await this.prisma.customerSession.delete({ where: { id: session.id } });
+      throw new AuthTokenExpiredException('Refresh token has expired');
+    }
+
+    // 4. Rotate the session: delete the old row before issuing the new pair
+    //    (generateTokens creates the replacement CustomerSession).
+    await this.prisma.customerSession.delete({ where: { id: session.id } });
+
+    const tokens = await this.generateTokens(session.customerId);
+
+    return {
+      customer: {
+        id: session.customer.id,
+        email: session.customer.email,
+        phone: session.customer.phone,
+        fullName: session.customer.fullName,
+        avatarUrl: session.customer.avatarUrl,
+      },
+      tokens,
+    };
   }
 
   private async generateTokens(customerId: string) {

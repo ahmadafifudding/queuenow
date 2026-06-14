@@ -63,6 +63,7 @@
 		"class-transformer": "^0.5.1",
 		"class-validator": "^0.14.0",
 		"cookie-parser": "^1.4.7",
+		"expo-server-sdk": "6.1.0",
 		"helmet": "^8.0.0",
 		"ioredis": "^5.4.0",
 		"passport": "^0.7.0",

@@ -4,10 +4,13 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { ERROR_CODES } from '@queuenow/shared-constants';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueueGateway } from './queue.gateway';
+import { AuthForbiddenException } from '../../common/exceptions/auth-forbidden.exception';
 import { IAuthenticatedUser } from '../../common/interfaces';
 import { PlanLimitsService } from '../plan/plan-limits.service';
+import { CancelTicketDto } from './dto';
 
 @Injectable()
 export class QueueService {
@@ -574,6 +577,88 @@ export class QueueService {
       position,
       estimatedWaitMinutes,
     };
+  }
+
+  /**
+   * Cancel/leave own ticket - public, ownership-scoped endpoint for customers
+   * Transitions the caller's own WAITING ticket out of the active queue.
+   *
+   * Authorization is by OWNERSHIP (not staff role): the stored ticket's
+   * `deviceFingerprint` OR `customerProfileId` must match the request body.
+   *
+   * Terminal status note: the TicketStatus enum has no dedicated CANCELLED
+   * value (WAITING | CALLED | SERVING | COMPLETED | SKIPPED). SKIPPED is the
+   * closest existing terminal status — it removes the ticket from the active
+   * queue without counting it as served (COMPLETED would inflate served stats).
+   * We mirror staff `skip()`: set SKIPPED + skippedAt and bump the daily
+   * totalSkipped counter so reporting stays consistent.
+   */
+  async cancelTicket(orgId: string, ticketId: string, dto: CancelTicketDto) {
+    const ticket = await this.prisma.queueTicket.findFirst({
+      where: { id: ticketId, orgId },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException('Ticket not found');
+    }
+
+    // Ownership check: the request must positively match the stored fingerprint
+    // or profile. A missing/null stored value never authorizes (no null == null).
+    const matchesFingerprint =
+      !!dto.deviceFingerprint && ticket.deviceFingerprint === dto.deviceFingerprint;
+    const matchesProfile =
+      !!dto.customerProfileId && ticket.customerProfileId === dto.customerProfileId;
+
+    if (!matchesFingerprint && !matchesProfile) {
+      throw new AuthForbiddenException('You do not have access to this ticket');
+    }
+
+    // Only a WAITING ticket can be left/cancelled by its owner.
+    if (ticket.status !== 'WAITING') {
+      throw new BadRequestException({
+        code: ERROR_CODES.QUEUE_INVALID_STATUS,
+        message: 'Ticket is no longer waiting and cannot be cancelled',
+      });
+    }
+
+    const updatedTicket = await this.prisma.queueTicket.update({
+      where: { id: ticketId },
+      data: {
+        status: 'SKIPPED',
+        skippedAt: new Date(),
+      },
+      include: {
+        service: { select: { id: true, name: true, prefix: true } },
+        counter: { select: { id: true, name: true } },
+      },
+    });
+
+    // Update daily counter stats (mirror staff skip()).
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    await this.prisma.dailyQueueCounter.updateMany({
+      where: {
+        orgId,
+        serviceId: ticket.serviceId,
+        date: today,
+      },
+      data: { totalSkipped: { increment: 1 } },
+    });
+
+    // Emit real-time update (queue:update to org/service rooms + ticket:update
+    // to the ticket room) so subscribers update live.
+    this.queueGateway.emitQueueUpdate(orgId, {
+      type: 'TICKET_CANCELLED',
+      ticket: {
+        id: updatedTicket.id,
+        ticketNumber: updatedTicket.ticketNumber,
+        status: 'SKIPPED',
+        serviceId: updatedTicket.serviceId,
+      },
+    });
+
+    return updatedTicket;
   }
 
   private validateStaffOrgAccess(orgId: string, user: IAuthenticatedUser): void {
