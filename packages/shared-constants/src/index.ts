@@ -46,6 +46,9 @@ export const ERROR_CODES = {
   CUSTOMER_NOT_FOUND: 'CUSTOMER_NOT_FOUND',
   CUSTOMER_EMAIL_EXISTS: 'CUSTOMER_EMAIL_EXISTS',
 
+  // Plan
+  PLAN_LIMIT_EXCEEDED: 'PLAN_LIMIT_EXCEEDED',
+
   // General
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
@@ -119,9 +122,7 @@ export const DEFAULT_SERVICES = {
     { name: 'Payment', prefix: 'B' },
     { name: 'Collection', prefix: 'C' },
   ],
-  OTHER: [
-    { name: 'General Service', prefix: 'A' },
-  ],
+  OTHER: [{ name: 'General Service', prefix: 'A' }],
 } as const;
 
 // ==========================================

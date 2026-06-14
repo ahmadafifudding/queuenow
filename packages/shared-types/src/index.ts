@@ -155,6 +155,37 @@ export interface ApiErrorResponse {
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 // ==========================================
+// PLAN ENFORCEMENT TYPES
+// ==========================================
+
+/** Resource keys that map 1:1 to a numeric `PLAN_LIMITS` field. */
+export type NumericResource = 'services' | 'counters' | 'staff' | 'queuePerDay';
+
+/** Boolean feature flags defined in `PLAN_LIMITS`. */
+export type FeatureFlag = 'tvDisplay' | 'analytics' | 'customBranding';
+
+/** The named numeric `PLAN_LIMITS` field that governs a `NumericResource`. */
+export type PlanLimitName = 'maxServices' | 'maxCounters' | 'maxStaff' | 'maxQueuePerDay';
+
+/** Per-resource usage projection surfaced by the plan-usage endpoint. */
+export interface PlanUsageResource {
+  resource: NumericResource;
+  limitName: PlanLimitName;
+  usage: number;
+  /** `null` means the resource is unlimited for the current plan. */
+  limit: number | null;
+  /** `usage >= limit`; always `false` when the limit is unlimited (`null`). */
+  atLimit: boolean;
+}
+
+/** The plan + usage projection returned by `GET /organizations/:id/plan-usage`. */
+export interface PlanUsageResponse {
+  plan: PlanType;
+  features: Record<FeatureFlag, boolean>;
+  resources: PlanUsageResource[];
+}
+
+// ==========================================
 // AUTH TYPES
 // ==========================================
 
@@ -184,7 +215,13 @@ export interface ICustomerLoginResponse {
 // ==========================================
 
 export interface IQueueUpdateEvent {
-  type: 'TICKET_JOINED' | 'TICKET_CALLED' | 'TICKET_RECALLED' | 'TICKET_SKIPPED' | 'TICKET_COMPLETED' | 'TICKET_REJOINED';
+  type:
+    | 'TICKET_JOINED'
+    | 'TICKET_CALLED'
+    | 'TICKET_RECALLED'
+    | 'TICKET_SKIPPED'
+    | 'TICKET_COMPLETED'
+    | 'TICKET_REJOINED';
   ticket: {
     id: string;
     ticketNumber: string;
