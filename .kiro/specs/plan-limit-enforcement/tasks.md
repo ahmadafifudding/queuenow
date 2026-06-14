@@ -109,7 +109,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Wrap invite/add in the Serializable transaction, call `assertWithinNumericLimit(tx, orgId, 'staff')` (count = existing `UserRole` rows + `PENDING` invitations), and create the invitation/role inside the same tx
     - _Requirements: 1.1, 1.2, 1.3, 1.5, 1.6_
 
-  - [ ]\* 6.4 Write unit tests for Service/Counter/Staff create enforcement
+  - [x]\* 6.4 Write unit tests for Service/Counter/Staff create enforcement
     - Assert allow below limit, reject with `PLAN_LIMIT_EXCEEDED` at/over limit, usage unchanged on reject, and `null` ⇒ unlimited; for staff assert pending invitations count toward `maxStaff`
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
@@ -136,7 +136,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Add `@RequiresFeature('analytics')` + `PlanFeatureGuard` to the existing authenticated `GET /organizations/:id/stats` surface (behind `JwtAuthGuard`), resolving `orgId` from `user.orgId`
     - _Requirements: 4.1, 4.2, 4.3_
 
-  - [ ]\* 8.4 Write unit tests for guard ordering and error paths
+  - [x]\* 8.4 Write unit tests for guard ordering and error paths
     - TV Display: `ORG_NOT_FOUND` for unknown orgId (precedence), `PLAN_LIMIT_EXCEEDED` when `tvDisplay` false, allow when true; Analytics: `AUTH_UNAUTHORIZED` for anonymous, `PLAN_LIMIT_EXCEEDED` when `analytics` false
     - _Requirements: 3.1, 3.3, 3.4, 4.1, 4.3_
 
@@ -150,18 +150,18 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Add the `changePlan` handler to `OrganizationController` with `@Roles('OWNER')` behind `JwtAuthGuard` + `RolesGuard`; non-OWNER ⇒ `AUTH_FORBIDDEN`, anon ⇒ `AUTH_UNAUTHORIZED`, invalid plan ⇒ `VALIDATION_ERROR`
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
 
-  - [ ]\* 9.3 Write property test for plan-change semantics
+  - [x]\* 9.3 Write property test for plan-change semantics
     - **Property 8: Plan change sets the target, is idempotent, and governs later decisions**
     - For any current and valid target plan, result plan equals target; target == current ⇒ unchanged, no error; applying twice == once; later enforcement uses the new plan's limits
     - **Validates: Requirements 6.1, 6.6, 6.7**
 
-  - [ ]\* 9.4 Write property tests for grandfathering invariants
+  - [x]\* 9.4 Write property tests for grandfathering invariants
     - **Property 6: A plan change never mutates existing resources or configuration**
     - **Property 7: Disabling then re-enabling a feature preserves config and restores access**
     - For any org state and target plan, only `plan` changes; a feature disable→enable round-trip preserves config and restores access
     - **Validates: Requirements 5.1, 5.4, 5.5**
 
-  - [ ]\* 9.5 Write unit tests for plan-change auth and validation error paths
+  - [x]\* 9.5 Write unit tests for plan-change auth and validation error paths
     - `AUTH_FORBIDDEN` for ADMIN/STAFF (plan unchanged), `AUTH_UNAUTHORIZED` for anonymous, `VALIDATION_ERROR` for non-enum target, `ORG_NOT_FOUND` for missing org; over-limit existing resources remain readable/updatable (R5.3)
     - _Requirements: 6.2, 6.3, 6.4, 6.5, 5.3_
 
@@ -174,7 +174,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Assert response includes plan, features record, and a resource entry per `NumericResource` with correct `atLimit`/`limit` (null ⇒ unlimited)
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 11. Checkpoint - backend enforcement complete
+- [x] 11. Checkpoint - backend enforcement complete
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 12. Real-DB concurrency and direct-API integration tests
