@@ -511,6 +511,40 @@ export const en = {
     queueFullBody: 'Today’s queue is full. Please try again later or ask a staff member for help.',
   },
 
+  /** Public ticket-tracking page (R12.5) — opened from the kiosk QR code. */
+  tracking: {
+    title: 'Track your ticket',
+    yourNumberLabel: 'Your number',
+    serviceLabel: 'Service',
+    counterLabel: 'Counter',
+    positionLabel: 'Position in line',
+    estimatedWaitLabel: 'Estimated wait',
+    minutesSuffix: 'min',
+    autoRefreshNote: 'This page updates automatically.',
+    recallNote: 'You have been called {count} time(s).',
+
+    /** Status headline + supporting line, keyed by ticket status. */
+    status: {
+      waitingHeadline: 'You’re in the queue',
+      waitingDetail: 'You are number {position} in line.',
+      waitingDetailNoPosition: 'Please wait to be called.',
+      calledHeadline: 'You’re being called!',
+      calledDetail: 'Please proceed to {counter}.',
+      calledDetailNoCounter: 'Please proceed to the counter.',
+      servingHeadline: 'Now serving you',
+      servingDetail: 'You’re being served at {counter}.',
+      servingDetailNoCounter: 'You’re being served.',
+      completedHeadline: 'All done',
+      completedDetail: 'Thank you for your visit.',
+      skippedHeadline: 'Ticket skipped',
+      skippedDetail: 'Your ticket was skipped — please see a staff member.',
+    },
+
+    // Data-region states
+    loadError: 'We couldn’t load your ticket. Check the link and try again.',
+    retry: 'Try again',
+  },
+
   errors,
 } as const;
 
