@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { PrismaModule } from './prisma/prisma.module';
+import { validateEnv } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { ServiceModule } from './modules/service/service.module';
@@ -19,7 +20,8 @@ import { QrCodeModule } from './modules/qr-code/qr-code.module';
     // Config
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [`.env.${process.env.NODE_ENV}`, '.env'],
+      envFilePath: [`.env.${process.env.NODE_ENV ?? 'development'}`, '.env'],
+      validate: validateEnv,
     }),
 
     // Rate limiting

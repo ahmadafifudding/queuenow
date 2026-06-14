@@ -1,1 +1,1 @@
-export { IAuthenticatedUser, IAuthenticatedCustomer } from './authenticated-user.interface';
+export type { IAuthenticatedUser, IAuthenticatedCustomer } from './authenticated-user.interface';

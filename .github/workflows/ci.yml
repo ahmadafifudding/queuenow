@@ -59,6 +59,9 @@ jobs:
       - name: Type check
         run: pnpm build
 
+      - name: Type check (web strict, no-any gate)
+        run: pnpm --filter @queuenow/web typecheck
+
       - name: Run tests
         run: pnpm test
         env:

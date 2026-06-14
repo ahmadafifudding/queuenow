@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -90,6 +90,7 @@ export class AuthService {
         id: result.organization.id,
         name: result.organization.name,
         slug: result.organization.slug,
+        role: 'OWNER',
       },
       tokens,
     };
@@ -154,7 +155,7 @@ export class AuthService {
     // Find session
     const session = await this.prisma.session.findUnique({
       where: { refreshToken },
-      include: { user: { include: { roles: true } } },
+      include: { user: { include: { roles: { include: { org: true } } } } },
     });
 
     if (!session || session.expiresAt < new Date()) {
@@ -171,13 +172,25 @@ export class AuthService {
     await this.prisma.session.delete({ where: { id: session.id } });
 
     // Generate new tokens
-    const tokens = await this.generateTokens(
-      session.user.id,
-      primaryRole.orgId,
-      primaryRole.role,
-    );
+    const tokens = await this.generateTokens(session.user.id, primaryRole.orgId, primaryRole.role);
 
-    return { tokens };
+    // Return the full session shape (ILoginResponse) so the web client can
+    // restore the user + organization + role on boot, not just the tokens.
+    return {
+      user: {
+        id: session.user.id,
+        email: session.user.email,
+        fullName: session.user.fullName,
+        avatarUrl: session.user.avatarUrl,
+      },
+      organization: {
+        id: primaryRole.org.id,
+        name: primaryRole.org.name,
+        slug: primaryRole.org.slug,
+        role: primaryRole.role,
+      },
+      tokens,
+    };
   }
 
   async logout(refreshToken: string) {
@@ -194,9 +207,9 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION', '7d'),
-    });
+    } as JwtSignOptions);
 
     // Store refresh token in DB
     const expiresAt = new Date();

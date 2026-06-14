@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsBoolean, IsInt, Min, Max, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsInt,
+  Min,
+  Max,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateServiceDto {
@@ -6,13 +15,13 @@ export class CreateServiceDto {
   @IsString()
   @MinLength(2)
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @ApiProperty({ example: 'A', description: 'Ticket prefix (1-3 characters)' })
   @IsString()
   @MinLength(1)
   @MaxLength(3)
-  prefix: string;
+  prefix!: string;
 
   @ApiPropertyOptional({ example: true, description: 'Whether service is active' })
   @IsOptional()
@@ -25,7 +34,10 @@ export class CreateServiceDto {
   @Min(0)
   sortOrder?: number;
 
-  @ApiPropertyOptional({ example: 50, description: 'Maximum queue entries per day (null = unlimited)' })
+  @ApiPropertyOptional({
+    example: 50,
+    description: 'Maximum queue entries per day (null = unlimited)',
+  })
   @IsOptional()
   @IsInt()
   @Min(1)

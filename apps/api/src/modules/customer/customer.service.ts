@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -55,10 +55,9 @@ export class CustomerService {
   async login(dto: any) {
     const customer = await this.prisma.customerProfile.findFirst({
       where: {
-        OR: [
-          { email: dto.email },
-          { phone: dto.phone },
-        ].filter((c) => Object.values(c)[0] !== undefined),
+        OR: [{ email: dto.email }, { phone: dto.phone }].filter(
+          (c) => Object.values(c)[0] !== undefined,
+        ),
       },
     });
 
@@ -206,9 +205,9 @@ export class CustomerService {
     const accessToken = this.jwtService.sign(payload);
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION', '30d'),
-    });
+    } as JwtSignOptions);
 
     // Store session
     const expiresAt = new Date();

@@ -15,5 +15,5 @@ export class LoginCustomerDto {
   @ApiProperty({ example: 'SecurePassword123!', description: 'Account password' })
   @IsString()
   @MinLength(1)
-  password: string;
+  password!: string;
 }

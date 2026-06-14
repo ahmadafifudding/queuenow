@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ==========================================
@@ -42,27 +41,27 @@ model Organization {
   updatedAt DateTime         @updatedAt @map("updated_at")
 
   // Relations
-  owner         User                  @relation("OrgOwner", fields: [ownerId], references: [id])
-  branding      OrganizationBranding?
-  settings      QueueSettings?
-  services      Service[]
-  counters      Counter[]
-  userRoles     UserRole[]
-  invitations   Invitation[]
+  owner            User                  @relation("OrgOwner", fields: [ownerId], references: [id])
+  branding         OrganizationBranding?
+  settings         QueueSettings?
+  services         Service[]
+  counters         Counter[]
+  userRoles        UserRole[]
+  invitations      Invitation[]
   staffAssignments StaffAssignment[]
-  queueTickets  QueueTicket[]
-  dailyCounters DailyQueueCounter[]
-  auditLogs     AuditLog[]
+  queueTickets     QueueTicket[]
+  dailyCounters    DailyQueueCounter[]
+  auditLogs        AuditLog[]
 
   @@map("organizations")
 }
 
 model OrganizationBranding {
-  id           String  @id @default(uuid())
-  orgId        String  @unique @map("org_id")
-  logoUrl      String? @map("logo_url")
-  primaryColor String  @default("#3B82F6") @map("primary_color")
-  qrText       String  @default("Scan to join queue") @map("qr_text")
+  id           String   @id @default(uuid())
+  orgId        String   @unique @map("org_id")
+  logoUrl      String?  @map("logo_url")
+  primaryColor String   @default("#3B82F6") @map("primary_color")
+  qrText       String   @default("Scan to join queue") @map("qr_text")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -82,28 +81,28 @@ enum AuthProvider {
 }
 
 model User {
-  id                String       @id @default(uuid())
-  email             String       @unique
-  passwordHash      String?      @map("password_hash")
-  fullName          String       @map("full_name")
-  phone             String?
-  avatarUrl         String?      @map("avatar_url")
-  provider          AuthProvider @default(EMAIL)
-  emailVerified     Boolean      @default(false) @map("email_verified")
-  isActive          Boolean      @default(true) @map("is_active")
-  lastLoginAt       DateTime?    @map("last_login_at")
-  createdAt         DateTime     @default(now()) @map("created_at")
-  updatedAt         DateTime     @updatedAt @map("updated_at")
+  id            String       @id @default(uuid())
+  email         String       @unique
+  passwordHash  String?      @map("password_hash")
+  fullName      String       @map("full_name")
+  phone         String?
+  avatarUrl     String?      @map("avatar_url")
+  provider      AuthProvider @default(EMAIL)
+  emailVerified Boolean      @default(false) @map("email_verified")
+  isActive      Boolean      @default(true) @map("is_active")
+  lastLoginAt   DateTime?    @map("last_login_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  ownedOrgs         Organization[]   @relation("OrgOwner")
-  roles             UserRole[]
-  staffAssignments  StaffAssignment[]
-  sessions          Session[]
-  invitationsSent   Invitation[]     @relation("InvitedBy")
-  ticketsCalled     QueueTicket[]    @relation("CalledBy")
-  ticketsCompleted  QueueTicket[]    @relation("CompletedBy")
-  auditLogs         AuditLog[]
+  ownedOrgs        Organization[]    @relation("OrgOwner")
+  roles            UserRole[]
+  staffAssignments StaffAssignment[]
+  sessions         Session[]
+  invitationsSent  Invitation[]      @relation("InvitedBy")
+  ticketsCalled    QueueTicket[]     @relation("CalledBy")
+  ticketsCompleted QueueTicket[]     @relation("CompletedBy")
+  auditLogs        AuditLog[]
 
   @@map("users")
 }
@@ -115,12 +114,12 @@ enum UserRoleType {
 }
 
 model UserRole {
-  id               String       @id @default(uuid())
-  userId           String       @map("user_id")
-  orgId            String       @map("org_id")
-  role             UserRoleType
-  assignedServiceId String?     @map("assigned_service_id")
-  createdAt        DateTime     @default(now()) @map("created_at")
+  id                String       @id @default(uuid())
+  userId            String       @map("user_id")
+  orgId             String       @map("org_id")
+  role              UserRoleType
+  assignedServiceId String?      @map("assigned_service_id")
+  createdAt         DateTime     @default(now()) @map("created_at")
 
   // Relations
   user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -162,19 +161,19 @@ model Invitation {
 // ==========================================
 
 model Service {
-  id             String  @id @default(uuid())
-  orgId          String  @map("org_id")
+  id             String   @id @default(uuid())
+  orgId          String   @map("org_id")
   name           String
   prefix         String
-  isActive       Boolean @default(true) @map("is_active")
-  sortOrder      Int     @default(0) @map("sort_order")
-  maxQueuePerDay Int?    @map("max_queue_per_day")
-  avgServingTime Int     @default(5) @map("avg_serving_time")
+  isActive       Boolean  @default(true) @map("is_active")
+  sortOrder      Int      @default(0) @map("sort_order")
+  maxQueuePerDay Int?     @map("max_queue_per_day")
+  avgServingTime Int      @default(5) @map("avg_serving_time")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
-  organization  Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  organization  Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
   counters      Counter[]
   userRoles     UserRole[]
   invitations   Invitation[]
@@ -186,11 +185,11 @@ model Service {
 }
 
 model Counter {
-  id        String  @id @default(uuid())
-  orgId     String  @map("org_id")
-  serviceId String  @map("service_id")
+  id        String   @id @default(uuid())
+  orgId     String   @map("org_id")
+  serviceId String   @map("service_id")
   name      String
-  isActive  Boolean @default(true) @map("is_active")
+  isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -275,14 +274,14 @@ model QueueTicket {
 // ==========================================
 
 model QueueSettings {
-  id              String  @id @default(uuid())
-  orgId           String  @unique @map("org_id")
-  resetTime       String  @default("00:00") @map("reset_time")
-  maxRecall       Int     @default(2) @map("max_recall")
-  requireName     Boolean @default(false) @map("require_name")
-  requirePhone    Boolean @default(false) @map("require_phone")
-  customFields    Json?   @map("custom_fields")
-  autoSkipTimeout Int?    @map("auto_skip_timeout")
+  id              String   @id @default(uuid())
+  orgId           String   @unique @map("org_id")
+  resetTime       String   @default("00:00") @map("reset_time")
+  maxRecall       Int      @default(2) @map("max_recall")
+  requireName     Boolean  @default(false) @map("require_name")
+  requirePhone    Boolean  @default(false) @map("require_phone")
+  customFields    Json?    @map("custom_fields")
+  autoSkipTimeout Int?     @map("auto_skip_timeout")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -323,7 +322,7 @@ model CustomerProfile {
   phone        String?
   fullName     String?      @map("full_name")
   passwordHash String?      @map("password_hash")
-  provider     AuthProvider  @default(EMAIL)
+  provider     AuthProvider @default(EMAIL)
   avatarUrl    String?      @map("avatar_url")
   pushToken    String?      @map("push_token")
   isActive     Boolean      @default(true) @map("is_active")
@@ -332,10 +331,10 @@ model CustomerProfile {
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  queueTickets      QueueTicket[]
-  favorites         CustomerFavorite[]
-  notifications     Notification[]
-  sessions          CustomerSession[]
+  queueTickets  QueueTicket[]
+  favorites     CustomerFavorite[]
+  notifications Notification[]
+  sessions      CustomerSession[]
 
   @@map("customer_profiles")
 }
