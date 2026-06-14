@@ -54,58 +54,58 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Generate timezone, `resetTime` (`HH:MM`), and `now`; assert `start <= now < end`, the interval spans exactly one calendar day in that timezone (including DST boundaries), and `start`'s wall-clock time equals `resetTime` (timezone-pinned oracle)
     - **Validates: Requirements 2.4**
 
-- [ ] 4. Implement the central `PlanLimitsService` and `PlanModule`
-  - [~] 4.1 Implement `PlanLimitsService` pure policy methods
+- [x] 4. Implement the central `PlanLimitsService` and `PlanModule`
+  - [x] 4.1 Implement `PlanLimitsService` pure policy methods
     - Create `apps/api/src/modules/plan/plan-limits.service.ts` with `limitsFor(plan)` (resolve `PLAN_LIMITS` entry) and `isFeatureEnabled(plan, flag)` using only `@queuenow/shared-constants`
     - _Requirements: 1.4, 3.1, 3.2, 4.1, 4.2_
 
-  - [ ]\* 4.2 Write property test for the numeric-limit decision
+  - [x]\* 4.2 Write property test for the numeric-limit decision
     - **Property 1: Numeric-limit decision is allow-iff-below-limit**
     - For any plan, resource, and non-negative usage, ALLOW when limit is `null` or `usage < limit`, REJECT with `PLAN_LIMIT_EXCEEDED` when limit is a number and `usage >= limit` (test against an in-memory enforcement model)
     - **Validates: Requirements 1.1, 1.2, 1.4, 1.5, 2.1, 2.2, 2.3, 5.2, 5.6**
 
-  - [ ]\* 4.3 Write property test for the feature-gate decision
+  - [x]\* 4.3 Write property test for the feature-gate decision
     - **Property 5: Feature gate permits iff the plan enables the flag, independent of auth source**
     - For any plan and flag, permit iff the plan's flag is `true`; decision depends only on the resolved org plan (identical for param-resolved and JWT-resolved orgId)
     - **Validates: Requirements 3.1, 3.2, 3.3, 4.1, 4.2**
 
-  - [~] 4.4 Implement `assertWithinNumericLimit` and `assertWithinDailyQueueLimit`
+  - [x] 4.4 Implement `assertWithinNumericLimit` and `assertWithinDailyQueueLimit`
     - Add `assertWithinNumericLimit(tx, orgId, resource)`: load org plan (throw `OrgNotFoundException` if missing), resolve the limit name/value, return on `null`, count usage within `tx` (services/counters via `count`; staff = `userRole.count` + `PENDING` invitation count), throw `PlanLimitExceededException` when `usage >= limit`
     - Add `assertWithinDailyQueueLimit(tx, orgId)`: resolve window via `resolveDailyWindow` (reading `QueueSettings.resetTime` + org timezone), sum `DailyQueueCounter.lastNumber` for the window date, apply the same `>=` rejection rule, return on `null` `maxQueuePerDay`
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.5, 5.2_
 
-  - [ ]\* 4.5 Write stateful property test for the never-exceeds usage invariant
+  - [x]\* 4.5 Write stateful property test for the never-exceeds usage invariant
     - **Property 2: Usage never exceeds the limit and rejects leave usage unchanged**
     - Use a model-based/stateful generator (`fc.commands` or sequence generator) over create/delete sequences (including interleavings) against the in-memory model; assert committed usage never exceeds the limit, every reject returns `PLAN_LIMIT_EXCEEDED` and leaves usage unchanged, and a delete below the limit re-permits the next create
     - **Validates: Requirements 1.3, 1.6, 5.6**
 
-  - [ ]\* 4.6 Write property test for daily-volume creation counting
+  - [x]\* 4.6 Write property test for daily-volume creation counting
     - **Property 4: Daily volume counts creations regardless of later state changes**
     - Generate create-then-mutate/delete sequences within a window; assert measured Daily_Queue_Volume equals the number of in-window creations
     - **Validates: Requirements 2.5**
 
-  - [~] 4.7 Implement `getPlanUsage` and register `PlanModule`
+  - [x] 4.7 Implement `getPlanUsage` and register `PlanModule`
     - Add `getPlanUsage(orgId)` returning `PlanUsageResponse` (plan, `features` record, per-resource `usage`/`limit`/`atLimit`), reusing the same counting logic and window helper
     - Create `apps/api/src/modules/plan/plan.module.ts` as `@Global()`, providing and exporting `PlanLimitsService`; register it in `app.module.ts`
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-  - [ ]\* 4.8 Write unit tests for `getPlanUsage` projection
+  - [x]\* 4.8 Write unit tests for `getPlanUsage` projection
     - Cover `null` limit ⇒ `atLimit === false` and unlimited representation, and `usage >= limit` ⇒ `atLimit === true`
     - _Requirements: 8.2, 8.3, 8.4_
 
-- [~] 5. Checkpoint - enforcement core
+- [x] 5. Checkpoint - enforcement core
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Wire atomic numeric-limit enforcement into create flows
-  - [~] 6.1 Enforce `maxServices` in `ServiceService.create`
+  - [ ] 6.1 Enforce `maxServices` in `ServiceService.create`
     - Wrap the create in `prisma.$transaction` at `Serializable` isolation, call `assertWithinNumericLimit(tx, orgId, 'services')` before `tx.service.create`, keep existing uniqueness checks inside the tx; add a `runSerializable()` retry-once wrapper for `40001` serialization failures
     - _Requirements: 1.1, 1.2, 1.3, 1.5, 1.6_
 
-  - [~] 6.2 Enforce `maxCounters` in `CounterService.create`
+  - [ ] 6.2 Enforce `maxCounters` in `CounterService.create`
     - Same transactional pattern calling `assertWithinNumericLimit(tx, orgId, 'counters')`
     - _Requirements: 1.1, 1.2, 1.3, 1.5, 1.6_
 
-  - [~] 6.3 Enforce `maxStaff` in `StaffService` invite/add flow
+  - [ ] 6.3 Enforce `maxStaff` in `StaffService` invite/add flow
     - Wrap invite/add in the Serializable transaction, call `assertWithinNumericLimit(tx, orgId, 'staff')` (count = existing `UserRole` rows + `PENDING` invitations), and create the invitation/role inside the same tx
     - _Requirements: 1.1, 1.2, 1.3, 1.5, 1.6_
 
@@ -114,7 +114,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
 - [ ] 7. Wire daily-queue-volume enforcement into the join flow
-  - [~] 7.1 Enforce `maxQueuePerDay` in `QueueService.joinQueue`
+  - [ ] 7.1 Enforce `maxQueuePerDay` in `QueueService.joinQueue`
     - Inside `joinQueue`'s transaction, call `assertWithinDailyQueueLimit(tx, orgId)` before creating the ticket; increment `DailyQueueCounter.lastNumber` and create the ticket in the same tx so the check and create are atomic
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
@@ -123,16 +123,16 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
 - [ ] 8. Implement the feature-gate guard and decorator
-  - [~] 8.1 Implement `@RequiresFeature` decorator and `PlanFeatureGuard`
+  - [x] 8.1 Implement `@RequiresFeature` decorator and `PlanFeatureGuard`
     - Create `apps/api/src/common/decorators/requires-feature.decorator.ts` (`SetMetadata(REQUIRES_FEATURE_KEY, flag)`)
     - Create `apps/api/src/common/guards/plan-feature.guard.ts` resolving `orgId` from `req.params.orgId ?? req.user.orgId`, throwing `OrgNotFoundException` when missing/unknown (decided before the feature check), and `PlanLimitExceededException` when `isFeatureEnabled` is false
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 4.1, 4.2_
 
-  - [~] 8.2 Apply the gate to TV Display (public by orgId)
+  - [ ] 8.2 Apply the gate to TV Display (public by orgId)
     - Add `@UseGuards(PlanFeatureGuard)` + `@RequiresFeature('tvDisplay')` to the public `DisplayController`; ensure `ORG_NOT_FOUND` precedence over the feature check for unknown orgId
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-  - [~] 8.3 Apply the gate to the analytics/stats surface (authenticated)
+  - [ ] 8.3 Apply the gate to the analytics/stats surface (authenticated)
     - Add `@RequiresFeature('analytics')` + `PlanFeatureGuard` to the existing authenticated `GET /organizations/:id/stats` surface (behind `JwtAuthGuard`), resolving `orgId` from `user.orgId`
     - _Requirements: 4.1, 4.2, 4.3_
 
@@ -141,12 +141,12 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - _Requirements: 3.1, 3.3, 3.4, 4.1, 4.3_
 
 - [ ] 9. Implement the manual plan-change endpoint
-  - [~] 9.1 Implement `ChangePlanDto` and `OrganizationService.changePlan`
+  - [ ] 9.1 Implement `ChangePlanDto` and `OrganizationService.changePlan`
     - Create `apps/api/src/modules/organization/dto/change-plan.dto.ts` validating `plan` ∈ `{FREE,BASIC,PRO,ENTERPRISE}` (enum)
     - Implement `changePlan(id, plan, user)`: validate org-scope access, `findUnique` ⇒ `OrgNotFoundException` if missing, return unchanged org when `org.plan === plan` (idempotent), else `organization.update({ data: { plan } })` returning the updated org; perform no side effects on existing resources
     - _Requirements: 6.1, 6.5, 6.6, 6.7, 5.1, 5.4_
 
-  - [~] 9.2 Add `PATCH /organizations/:id/plan` (OWNER-only)
+  - [ ] 9.2 Add `PATCH /organizations/:id/plan` (OWNER-only)
     - Add the `changePlan` handler to `OrganizationController` with `@Roles('OWNER')` behind `JwtAuthGuard` + `RolesGuard`; non-OWNER ⇒ `AUTH_FORBIDDEN`, anon ⇒ `AUTH_UNAUTHORIZED`, invalid plan ⇒ `VALIDATION_ERROR`
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
 
@@ -166,7 +166,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - _Requirements: 6.2, 6.3, 6.4, 6.5, 5.3_
 
 - [ ] 10. Implement the plan-usage endpoint
-  - [~] 10.1 Add `GET /organizations/:id/plan-usage` (OWNER/ADMIN)
+  - [ ] 10.1 Add `GET /organizations/:id/plan-usage` (OWNER/ADMIN)
     - Add the handler to `OrganizationController` behind `JwtAuthGuard` + `RolesGuard('OWNER','ADMIN')` delegating to `PlanLimitsService.getPlanUsage`, returning `PlanUsageResponse` (plan + per-resource usage/limit/atLimit + features)
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
@@ -174,7 +174,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - Assert response includes plan, features record, and a resource entry per `NumericResource` with correct `atLimit`/`limit` (null ⇒ unlimited)
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [~] 11. Checkpoint - backend enforcement complete
+- [ ] 11. Checkpoint - backend enforcement complete
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 12. Real-DB concurrency and direct-API integration tests
@@ -188,13 +188,13 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - _Requirements: 10.7_
 
 - [ ] 13. Frontend: query keys, hooks, and error mapping
-  - [~] 13.1 Add `planUsage` query key and `usePlanUsage`/`useChangePlan` hooks
+  - [ ] 13.1 Add `planUsage` query key and `usePlanUsage`/`useChangePlan` hooks
     - Add `planUsage(orgId)` to `apps/web/src/lib/api/query-keys.ts`
     - Create `features/organization/api/usePlanUsage.ts` (`useQuery` for `GET :id/plan-usage`)
     - Create `features/organization/api/useChangePlan.ts` (`useMutation` `PATCH :id/plan`) invalidating `planUsage`, the org query, and gated lists
     - _Requirements: 8.1, 8.2, 8.3, 8.6, 6.1, 6.7_
 
-  - [~] 13.2 Map `PLAN_LIMIT_EXCEEDED` and add `onPlanLimitError` helper
+  - [ ] 13.2 Map `PLAN_LIMIT_EXCEEDED` and add `onPlanLimitError` helper
     - Add friendly copy for `PLAN_LIMIT_EXCEEDED` in `lib/api/error-map.ts` and `i18n/en.ts`
     - Add a shared `onPlanLimitError` helper that, when `ApiError.code === 'PLAN_LIMIT_EXCEEDED'`, shows the upgrade prompt and does not reset the form (retains unsaved input)
     - _Requirements: 8.5_
@@ -205,7 +205,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - **Validates: Requirements 8.5**
 
 - [ ] 14. Frontend: Plan & Usage view and plan-change dialog
-  - [~] 14.1 Implement the usage formatter and `PlanUsageView`
+  - [ ] 14.1 Implement the usage formatter and `PlanUsageView`
     - Add a pure formatter returning `"{usage} / {limit}"` for numeric limits and `"Unlimited"` for `null`
     - Create `features/organization/components/PlanUsageView.tsx` rendering plan name, per-resource usage/limit, per-resource upgrade prompt for at-limit resources, and an error indication (no usage values) on query failure
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.6_
@@ -220,7 +220,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - For any plan-usage projection, the set of resources showing an upgrade prompt equals the set whose limit is numeric and `usage >= limit`
     - **Validates: Requirements 8.4**
 
-  - [~] 14.4 Implement `PlanChangeDialog`
+  - [ ] 14.4 Implement `PlanChangeDialog`
     - Create `features/organization/components/PlanChangeDialog.tsx` (OWNER-only target-plan picker) wired to `useChangePlan`
     - _Requirements: 6.1, 8.4, 9.4_
 
@@ -229,7 +229,7 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - _Requirements: 8.1, 8.6_
 
 - [ ] 15. Frontend: feature-gate mirroring in navigation
-  - [~] 15.1 Implement `usePlanFeatures` and `AppShell` feature gating
+  - [ ] 15.1 Implement `usePlanFeatures` and `AppShell` feature gating
     - Add `usePlanFeatures()` in `features/auth/capabilities.ts` resolving `{tvDisplay, analytics}` from `planUsage.features`
     - Add optional `featureFlag?: FeatureFlag` to `AppShellNavItem`; update `visibleNavItems` to keep an item only when capability is satisfied AND (no `featureFlag` or the flag is true); render an OWNER upgrade entry in place of a hidden gated surface
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
@@ -240,12 +240,12 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
     - **Validates: Requirements 9.1, 9.2, 9.3, 9.4**
 
 - [ ] 16. Author the UAT/demo checklist
-  - [~] 16.1 Write `uat-checklist.md` covering R10.1–R10.7
+  - [ ] 16.1 Write `uat-checklist.md` covering R10.1–R10.7
     - Create `.kiro/specs/plan-limit-enforcement/uat-checklist.md` with steps for: per-resource allow-then-reject at the limit (R10.1); `null` ⇒ unlimited / "Unlimited" display (R10.2); upgrade-then-create-up-to-new-limit (R10.3); TV Display gating on/off (R10.4); Analytics gating on/off (R10.5); downgrade grandfathering + reject + re-permit after deletion (R10.6); direct API over-limit returns `PLAN_LIMIT_EXCEEDED` + HTTP 403 (R10.7)
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
 
 - [ ] 17. Final verification - full green build
-  - [~] 17.1 Run frontend and backend test/build suites and fix any failures
+  - [ ] 17.1 Run frontend and backend test/build suites and fix any failures
     - Run `pnpm --filter @queuenow/web typecheck`, `pnpm --filter @queuenow/web test`, and `pnpm --filter @queuenow/web build`
     - Run the backend api test suite (`pnpm --filter @queuenow/api test`) including the property, unit, and integration tests
     - Resolve any type, lint, test, or build failures until everything is green
