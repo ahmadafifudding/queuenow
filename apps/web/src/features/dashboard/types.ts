@@ -18,3 +18,26 @@ export interface OrgStats {
   /** Total tickets issued today (waiting + serving + completed + skipped). */
   total: number;
 }
+
+/** A currently-called ticket shown in the dashboard "now calling" strip. */
+export interface OverviewCalledTicket {
+  ticketNumber: string;
+  counterName?: string;
+}
+
+/** Per-service queue snapshot for the dashboard breakdown. */
+export interface OverviewServiceStatus {
+  service: { id: string; name: string; prefix: string };
+  waiting: number;
+  serving: number;
+  completedToday: number;
+  currentlyCalled: OverviewCalledTicket[];
+}
+
+/** The dashboard's live queue overview (subset of the public queue-status read). */
+export interface QueueOverview {
+  organizationId: string;
+  organizationName: string;
+  services: OverviewServiceStatus[];
+  lastUpdated: string;
+}
