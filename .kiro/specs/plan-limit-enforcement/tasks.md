@@ -177,13 +177,13 @@ backend, Vitest on the frontend) at a minimum of 100 runs.
 - [x] 11. Checkpoint - backend enforcement complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Real-DB concurrency and direct-API integration tests
-  - [ ]\* 12.1 Write the real-database concurrency integration test
+- [x] 12. Real-DB concurrency and direct-API integration tests
+  - [x]\* 12.1 Write the real-database concurrency integration test
     - **Property 2: Usage never exceeds the limit and rejects leave usage unchanged** (real transactional guarantee)
     - Issue N parallel create requests for the same resource/org while `currentUsage = limit − 1` against real Postgres at `Serializable` isolation; assert final committed count equals `limit` and excess requests received `PLAN_LIMIT_EXCEEDED` (HTTP 403)
     - **Validates: Requirements 1.6**
 
-  - [ ]\* 12.2 Write the direct-API over-limit Supertest
+  - [x]\* 12.2 Write the direct-API over-limit Supertest
     - Via Supertest (no UI), create an over-limit resource and assert the response envelope has `error.code === 'PLAN_LIMIT_EXCEEDED'` and HTTP status 403
     - _Requirements: 10.7_
 
