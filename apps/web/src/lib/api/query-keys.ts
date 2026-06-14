@@ -18,6 +18,8 @@ export const queryKeys = {
   staff: (orgId: string, page: number) => ['staff', orgId, page] as const,
   /** A single queue ticket's public tracking status. */
   ticket: (orgId: string, ticketId: string) => ['ticket', orgId, ticketId] as const,
+  /** Today's queue statistics for the org dashboard. */
+  orgStats: (orgId: string) => ['org-stats', orgId] as const,
   /** The organization record itself. */
   org: (orgId: string) => ['organization', orgId] as const,
 } as const;

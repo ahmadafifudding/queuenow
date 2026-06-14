@@ -30,6 +30,8 @@ export const organizationEndpoints = {
   settings: (orgId: string): string => `/organizations/${orgId}/settings`,
   /** PATCH the org's queue settings — resetTime/maxRecall/requireName/… (R11.6). */
   updateSettings: (orgId: string): string => `/organizations/${orgId}/settings`,
+  /** GET today's queue statistics for the org dashboard (OWNER / ADMIN). */
+  stats: (orgId: string): string => `/organizations/${orgId}/stats`,
   /** DELETE the organization (OWNER only, R11.7). See ASSUMPTION above. */
   delete: (orgId: string): string => `/organizations/${orgId}`,
 } as const;

@@ -511,6 +511,23 @@ export const en = {
     queueFullBody: 'Today’s queue is full. Please try again later or ask a staff member for help.',
   },
 
+  /** Dashboard home summary (today's queue stats). */
+  dashboard: {
+    title: 'Dashboard',
+    subtitle: 'Today’s queue at a glance.',
+    greeting: 'Welcome back, {name}.',
+    stats: {
+      waiting: 'Waiting',
+      serving: 'Serving',
+      completed: 'Completed today',
+      skipped: 'Skipped',
+      total: 'Total today',
+    },
+    loadError: 'We couldn’t load today’s statistics.',
+    goToQueue: 'Open queue panel',
+    noOrganization: 'No active organization for this session.',
+  },
+
   /** Public ticket-tracking page (R12.5) — opened from the kiosk QR code. */
   tracking: {
     title: 'Track your ticket',
