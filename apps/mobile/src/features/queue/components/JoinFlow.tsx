@@ -11,6 +11,7 @@ import {
 
 import { ServiceSelection, useDiscovery } from "@/features/discovery";
 import type { DiscoveryTarget } from "@/features/discovery";
+import { FavoriteToggle } from "@/features/favorites";
 import { strings } from "@/i18n";
 import { getErrorMessage } from "@/lib/api/error-map";
 import { useLiveActionGate } from "@/lib/connectivity";
@@ -156,6 +157,7 @@ export function JoinFlow({ target }: JoinFlowProps): React.JSX.Element {
 				{selectedService ? (
 					<Text style={styles.selectedService}>{selectedService.name}</Text>
 				) : null}
+				<FavoriteToggle orgId={joinOrgId} />
 			</View>
 
 			<View style={styles.field}>

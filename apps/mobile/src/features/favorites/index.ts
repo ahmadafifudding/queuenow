@@ -11,5 +11,7 @@ export {
   useRemoveFavorite,
   type UseFavoritesDeps,
 } from './use-favorites';
+export { isOrgFavorited } from './favorite-selectors';
 export { FavoritesList } from './components/FavoritesList';
+export { FavoriteToggle, type FavoriteToggleProps } from './components/FavoriteToggle';
 export type { FavoriteItem, FavoriteOrganization } from './types';

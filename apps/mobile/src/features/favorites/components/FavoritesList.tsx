@@ -6,7 +6,7 @@ import { DataRegion } from "@/components/DataRegion";
 import { strings } from "@/i18n";
 import { useAuthStore } from "@/lib/auth/auth-store";
 
-import { useFavorites } from "../use-favorites";
+import { useFavorites, useRemoveFavorite } from "../use-favorites";
 import type { FavoriteItem } from "../types";
 
 /**
@@ -32,6 +32,7 @@ export function FavoritesList(): React.JSX.Element {
 	const router = useRouter();
 	const isSignedIn = useAuthStore((state) => state.status === "signed-in");
 	const favorites = useFavorites();
+	const removeFavorite = useRemoveFavorite();
 
 	// Only render favorites that still resolve to an (active) organization, so
 	// every row has a name and a valid view-services target (R8.4).
@@ -73,25 +74,48 @@ export function FavoritesList(): React.JSX.Element {
 				contentContainerStyle={styles.listContent}
 				data={items}
 				keyExtractor={(item) => item.id}
-				renderItem={({ item }) => (
-					<View style={styles.row}>
-						<View style={styles.rowText}>
-							<Text style={styles.orgLabel}>
-								{strings.favorites.organizationLabel}
-							</Text>
-							<Text style={styles.orgName}>{item.organization?.name}</Text>
+				renderItem={({ item }) => {
+					const isRemoving =
+						removeFavorite.isPending && removeFavorite.variables === item.orgId;
+					return (
+						<View style={styles.row}>
+							<View style={styles.rowText}>
+								<Text style={styles.orgLabel}>
+									{strings.favorites.organizationLabel}
+								</Text>
+								<Text style={styles.orgName}>{item.organization?.name}</Text>
+							</View>
+							<View style={styles.rowActions}>
+								<Pressable
+									accessibilityRole="button"
+									onPress={() => router.push(`/join/${item.orgId}`)}
+									style={styles.viewButton}
+								>
+									<Text style={styles.viewButtonLabel}>
+										{strings.favorites.viewServices}
+									</Text>
+								</Pressable>
+								<Pressable
+									accessibilityRole="button"
+									accessibilityState={{
+										disabled: isRemoving,
+										busy: isRemoving,
+									}}
+									disabled={isRemoving}
+									onPress={() => removeFavorite.mutate(item.orgId)}
+									style={[
+										styles.removeButton,
+										isRemoving && styles.removeButtonDisabled,
+									]}
+								>
+									<Text style={styles.removeButtonLabel}>
+										{strings.favorites.remove}
+									</Text>
+								</Pressable>
+							</View>
 						</View>
-						<Pressable
-							accessibilityRole="button"
-							onPress={() => router.push(`/join/${item.orgId}`)}
-							style={styles.viewButton}
-						>
-							<Text style={styles.viewButtonLabel}>
-								{strings.favorites.viewServices}
-							</Text>
-						</Pressable>
-					</View>
-				)}
+					);
+				}}
 			/>
 		</DataRegion>
 	);
@@ -132,6 +156,26 @@ const styles = StyleSheet.create({
 	},
 	viewButtonLabel: {
 		color: "#ffffff",
+		fontSize: 14,
+		fontWeight: "600",
+	},
+	rowActions: {
+		alignItems: "flex-end",
+		gap: 8,
+	},
+	removeButton: {
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		borderRadius: 8,
+		borderWidth: 1,
+		borderColor: "#dc2626",
+		backgroundColor: "#ffffff",
+	},
+	removeButtonDisabled: {
+		opacity: 0.5,
+	},
+	removeButtonLabel: {
+		color: "#dc2626",
 		fontSize: 14,
 		fontWeight: "600",
 	},
