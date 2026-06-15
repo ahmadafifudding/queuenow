@@ -1,24 +1,63 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
 import { ERROR_CODES } from '@queuenow/shared-constants';
+import { NotificationType } from '@queuenow/shared-types';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueueGateway } from './queue.gateway';
 import { AuthForbiddenException } from '../../common/exceptions/auth-forbidden.exception';
 import { IAuthenticatedUser } from '../../common/interfaces';
 import { PlanLimitsService } from '../plan/plan-limits.service';
+import { NotificationService } from '../notification/notification.service';
 import { CancelTicketDto } from './dto';
 
 @Injectable()
 export class QueueService {
+  private readonly logger = new Logger(QueueService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly queueGateway: QueueGateway,
     private readonly planLimits: PlanLimitsService,
+    private readonly notificationService: NotificationService,
   ) {}
+
+  /**
+   * Dual-channel turn-alert delivery for a single ticket.
+   * - Socket channel ALWAYS fires (works for anonymous tickets).
+   * - Push channel fires iff the ticket has a non-null customerProfileId.
+   * All failures are swallowed/logged so a delivery error can never fail or roll
+   * back the queue action (R2.8). sendNotification never throws, but the socket
+   * emit is still guarded defensively. Called exactly once per affected ticket
+   * per type per transition (structural idempotency, R2.7).
+   */
+  private async emitTurnAlert(
+    ticket: { id: string; customerProfileId: string | null },
+    type: NotificationType,
+    counterName?: string,
+  ): Promise<void> {
+    // Build payload: counterName included only for YOUR_TURN (R2.1/R2.3).
+    const payload = counterName !== undefined ? { type, counterName } : { type };
+    try {
+      this.queueGateway.emitTicketNotification(ticket.id, payload);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error(`emitTicketNotification failed for ticket ${ticket.id}: ${reason}`);
+    }
+    if (ticket.customerProfileId) {
+      // sendNotification already never throws; guarded anyway for defense in depth.
+      try {
+        await this.notificationService.sendNotification(ticket.id, ticket.customerProfileId, type);
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : 'unknown error';
+        this.logger.error(`sendNotification failed for ticket ${ticket.id}: ${reason}`);
+      }
+    }
+  }
 
   /**
    * Join the queue - public endpoint for customers
@@ -215,6 +254,28 @@ export class QueueService {
       serviceName: counter.service.name,
     });
 
+    // Turn-alert wiring (appended AFTER all pre-existing emissions). The called
+    // ticket receives YOUR_TURN with the counter it was called to (R2.1, R2.2).
+    await this.emitTurnAlert(updatedTicket, NotificationType.YOUR_TURN, counter.name);
+
+    // ALMOST_TURN for the new front-of-line WAITING ticket. The just-called
+    // ticket is now CALLED, so this WAITING query excludes it and returns the
+    // next ticket the next callNext would serve (R2.5). Guarded so a lookup or
+    // delivery failure can never fail the callNext action (R2.8).
+    try {
+      const nextWaiting = await this.prisma.queueTicket.findFirst({
+        where: { orgId, serviceId: counter.serviceId, status: 'WAITING' },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, customerProfileId: true },
+      });
+      if (nextWaiting) {
+        await this.emitTurnAlert(nextWaiting, NotificationType.ALMOST_TURN);
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error(`ALMOST_TURN next-waiting lookup failed for org ${orgId}: ${reason}`);
+    }
+
     return updatedTicket;
   }
 
@@ -279,6 +340,11 @@ export class QueueService {
       recallCount: updatedTicket.recallCount,
     });
 
+    // Turn-alert wiring (appended AFTER all pre-existing emissions). Recall is an
+    // explicit re-summon: YOUR_TURN fires again on both channels, using the
+    // ticket's existing counter (R2.3).
+    await this.emitTurnAlert(updatedTicket, NotificationType.YOUR_TURN, ticket.counter?.name);
+
     return updatedTicket;
   }
 
@@ -332,6 +398,10 @@ export class QueueService {
         serviceId: updatedTicket.serviceId,
       },
     });
+
+    // Turn-alert wiring (appended AFTER all pre-existing emissions). SKIPPED fires
+    // with no counterName (R2.4).
+    await this.emitTurnAlert(updatedTicket, NotificationType.SKIPPED);
 
     return updatedTicket;
   }
