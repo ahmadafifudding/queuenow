@@ -4,7 +4,7 @@ import { LoginForm } from "@/features/auth/components/LoginForm";
 
 /**
  * Login route. Thin wrapper that renders the auth feature's `LoginForm`
- * (react-hook-form + shared `loginSchema`); all behavior lives in the feature.
+ * (TanStack Form + shared `loginSchema`); all behavior lives in the feature.
  */
 export const Route = createFileRoute("/login")({
 	component: LoginComponent,

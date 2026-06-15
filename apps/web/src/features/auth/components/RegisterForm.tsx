@@ -2,14 +2,13 @@
  * RegisterForm — owner + organization sign-up (Requirements 4.2, 4.9, 4.10).
  *
  * Same pattern as {@link LoginForm}: validation uses the shared `registerSchema`
- * (types inferred from it), submit is disabled while pending, the returned
- * session is stored by `useRegister`, and we navigate to `/dashboard` on success.
- * Backend `error.details` are mapped onto fields; non-field errors become a toast.
+ * (types inferred from it) via TanStack Form's Standard Schema validator, submit
+ * is disabled while pending, the returned session is stored by `useRegister`,
+ * and we navigate to `/dashboard` on success. Backend `error.details` are mapped
+ * onto fields (returned from `onSubmitAsync`); non-field errors become a toast.
  */
 import type { ReactElement } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import type { Path } from "react-hook-form";
+import { useForm } from "@tanstack/react-form";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -20,15 +19,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ApiError } from "@/lib/api/client";
 import { getErrorMessage } from "@/lib/api/error-map";
+import { firstErrorMessage } from "@/lib/forms";
 import { strings } from "@/i18n";
 import { cn } from "@/lib/utils";
 
-import { applyFieldErrors } from "../lib/field-errors";
+import { toFieldErrors } from "../lib/field-errors";
 import { useRegister } from "../hooks/useRegister";
 
 /** Form fields eligible for backend inline error mapping. */
-const REGISTER_FIELDS: readonly Path<RegisterInput>[] = [
+const REGISTER_FIELDS: readonly (keyof RegisterInput)[] = [
 	"email",
 	"password",
 	"fullName",
@@ -49,13 +50,8 @@ const ORG_TYPE_OPTIONS: readonly RegisterInput["organizationType"][] = [
 export function RegisterForm(): ReactElement {
 	const navigate = useNavigate();
 	const registerMutation = useRegister();
-	const {
-		register,
-		handleSubmit,
-		setError,
-		formState: { errors },
-	} = useForm<RegisterInput>({
-		resolver: zodResolver(registerSchema),
+
+	const form = useForm({
 		defaultValues: {
 			email: "",
 			password: "",
@@ -63,29 +59,33 @@ export function RegisterForm(): ReactElement {
 			phone: "",
 			organizationName: "",
 			organizationType: "CLINIC",
-		},
-	});
-
-	const onSubmit = handleSubmit((values) => {
-		registerMutation.mutate(values, {
-			onSuccess: () => {
-				toast.success(strings.auth.registerSuccess);
-				void navigate({ to: "/dashboard" });
-			},
-			onError: (error) => {
-				const { mapped } = applyFieldErrors<RegisterInput>(
-					error.details,
-					REGISTER_FIELDS,
-					setError,
-				);
-				if (mapped.length === 0) {
-					toast.error(getErrorMessage(error));
+		} as RegisterInput,
+		validators: {
+			onSubmit: registerSchema,
+			onSubmitAsync: async ({ value }) => {
+				try {
+					await registerMutation.mutateAsync(value);
+					return null;
+				} catch (error) {
+					const apiError = error instanceof ApiError ? error : undefined;
+					const { fields, mapped } = toFieldErrors(
+						apiError?.details,
+						REGISTER_FIELDS as readonly string[],
+					);
+					if (mapped.length === 0) {
+						const message = getErrorMessage(apiError);
+						toast.error(message);
+						return { form: message };
+					}
+					return { fields };
 				}
 			},
-		});
+		},
+		onSubmit: () => {
+			toast.success(strings.auth.registerSuccess);
+			void navigate({ to: "/dashboard" });
+		},
 	});
-
-	const isPending = registerMutation.isPending;
 
 	return (
 		<div className="w-full max-w-sm space-y-6">
@@ -98,151 +98,185 @@ export function RegisterForm(): ReactElement {
 				</p>
 			</div>
 
-			<form noValidate onSubmit={onSubmit} className="space-y-4">
-				<div className="space-y-2">
-					<Label htmlFor="register-fullName">
-						{strings.auth.fields.fullName}
-					</Label>
-					<Input
-						id="register-fullName"
-						autoComplete="name"
-						aria-invalid={errors.fullName !== undefined}
-						aria-describedby={
-							errors.fullName ? "register-fullName-error" : undefined
-						}
-						{...register("fullName")}
-					/>
-					{errors.fullName ? (
-						<p
-							id="register-fullName-error"
-							className="text-sm text-destructive"
-						>
-							{errors.fullName.message}
-						</p>
-					) : null}
-				</div>
+			<form
+				noValidate
+				className="space-y-4"
+				onSubmit={(event) => {
+					event.preventDefault();
+					event.stopPropagation();
+					void form.handleSubmit();
+				}}
+			>
+				<form.Field name="fullName">
+					{(field) => {
+						const error = firstErrorMessage(field.state.meta.errors);
+						return (
+							<div className="space-y-2">
+								<Label htmlFor={field.name}>
+									{strings.auth.fields.fullName}
+								</Label>
+								<Input
+									id={field.name}
+									name={field.name}
+									autoComplete="name"
+									aria-invalid={error !== undefined}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(event) => field.handleChange(event.target.value)}
+								/>
+								{error ? (
+									<p className="text-sm text-destructive">{error}</p>
+								) : null}
+							</div>
+						);
+					}}
+				</form.Field>
 
-				<div className="space-y-2">
-					<Label htmlFor="register-email">{strings.auth.fields.email}</Label>
-					<Input
-						id="register-email"
-						type="email"
-						autoComplete="email"
-						aria-invalid={errors.email !== undefined}
-						aria-describedby={errors.email ? "register-email-error" : undefined}
-						{...register("email")}
-					/>
-					{errors.email ? (
-						<p id="register-email-error" className="text-sm text-destructive">
-							{errors.email.message}
-						</p>
-					) : null}
-				</div>
+				<form.Field name="email">
+					{(field) => {
+						const error = firstErrorMessage(field.state.meta.errors);
+						return (
+							<div className="space-y-2">
+								<Label htmlFor={field.name}>{strings.auth.fields.email}</Label>
+								<Input
+									id={field.name}
+									name={field.name}
+									type="email"
+									autoComplete="email"
+									aria-invalid={error !== undefined}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(event) => field.handleChange(event.target.value)}
+								/>
+								{error ? (
+									<p className="text-sm text-destructive">{error}</p>
+								) : null}
+							</div>
+						);
+					}}
+				</form.Field>
 
-				<div className="space-y-2">
-					<Label htmlFor="register-password">
-						{strings.auth.fields.password}
-					</Label>
-					<Input
-						id="register-password"
-						type="password"
-						autoComplete="new-password"
-						aria-invalid={errors.password !== undefined}
-						aria-describedby={
-							errors.password ? "register-password-error" : undefined
-						}
-						{...register("password")}
-					/>
-					{errors.password ? (
-						<p
-							id="register-password-error"
-							className="text-sm text-destructive"
-						>
-							{errors.password.message}
-						</p>
-					) : null}
-				</div>
+				<form.Field name="password">
+					{(field) => {
+						const error = firstErrorMessage(field.state.meta.errors);
+						return (
+							<div className="space-y-2">
+								<Label htmlFor={field.name}>
+									{strings.auth.fields.password}
+								</Label>
+								<Input
+									id={field.name}
+									name={field.name}
+									type="password"
+									autoComplete="new-password"
+									aria-invalid={error !== undefined}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(event) => field.handleChange(event.target.value)}
+								/>
+								{error ? (
+									<p className="text-sm text-destructive">{error}</p>
+								) : null}
+							</div>
+						);
+					}}
+				</form.Field>
 
-				<div className="space-y-2">
-					<Label htmlFor="register-phone">{strings.auth.fields.phone}</Label>
-					<Input
-						id="register-phone"
-						type="tel"
-						autoComplete="tel"
-						aria-invalid={errors.phone !== undefined}
-						aria-describedby={errors.phone ? "register-phone-error" : undefined}
-						{...register("phone")}
-					/>
-					{errors.phone ? (
-						<p id="register-phone-error" className="text-sm text-destructive">
-							{errors.phone.message}
-						</p>
-					) : null}
-				</div>
+				<form.Field name="phone">
+					{(field) => {
+						const error = firstErrorMessage(field.state.meta.errors);
+						return (
+							<div className="space-y-2">
+								<Label htmlFor={field.name}>{strings.auth.fields.phone}</Label>
+								<Input
+									id={field.name}
+									name={field.name}
+									type="tel"
+									autoComplete="tel"
+									aria-invalid={error !== undefined}
+									value={field.state.value ?? ""}
+									onBlur={field.handleBlur}
+									onChange={(event) => field.handleChange(event.target.value)}
+								/>
+								{error ? (
+									<p className="text-sm text-destructive">{error}</p>
+								) : null}
+							</div>
+						);
+					}}
+				</form.Field>
 
-				<div className="space-y-2">
-					<Label htmlFor="register-organizationName">
-						{strings.auth.fields.organizationName}
-					</Label>
-					<Input
-						id="register-organizationName"
-						autoComplete="organization"
-						aria-invalid={errors.organizationName !== undefined}
-						aria-describedby={
-							errors.organizationName
-								? "register-organizationName-error"
-								: undefined
-						}
-						{...register("organizationName")}
-					/>
-					{errors.organizationName ? (
-						<p
-							id="register-organizationName-error"
-							className="text-sm text-destructive"
-						>
-							{errors.organizationName.message}
-						</p>
-					) : null}
-				</div>
+				<form.Field name="organizationName">
+					{(field) => {
+						const error = firstErrorMessage(field.state.meta.errors);
+						return (
+							<div className="space-y-2">
+								<Label htmlFor={field.name}>
+									{strings.auth.fields.organizationName}
+								</Label>
+								<Input
+									id={field.name}
+									name={field.name}
+									autoComplete="organization"
+									aria-invalid={error !== undefined}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(event) => field.handleChange(event.target.value)}
+								/>
+								{error ? (
+									<p className="text-sm text-destructive">{error}</p>
+								) : null}
+							</div>
+						);
+					}}
+				</form.Field>
 
-				<div className="space-y-2">
-					<Label htmlFor="register-organizationType">
-						{strings.auth.fields.organizationType}
-					</Label>
-					<select
-						id="register-organizationType"
-						aria-invalid={errors.organizationType !== undefined}
-						aria-describedby={
-							errors.organizationType
-								? "register-organizationType-error"
-								: undefined
-						}
-						className={cn(
-							"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive",
-						)}
-						{...register("organizationType")}
-					>
-						{ORG_TYPE_OPTIONS.map((value) => (
-							<option key={value} value={value}>
-								{strings.auth.organizationTypes[value]}
-							</option>
-						))}
-					</select>
-					{errors.organizationType ? (
-						<p
-							id="register-organizationType-error"
-							className="text-sm text-destructive"
-						>
-							{errors.organizationType.message}
-						</p>
-					) : null}
-				</div>
+				<form.Field name="organizationType">
+					{(field) => {
+						const error = firstErrorMessage(field.state.meta.errors);
+						return (
+							<div className="space-y-2">
+								<Label htmlFor={field.name}>
+									{strings.auth.fields.organizationType}
+								</Label>
+								<select
+									id={field.name}
+									name={field.name}
+									aria-invalid={error !== undefined}
+									className={cn(
+										"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive",
+									)}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(event) =>
+										field.handleChange(
+											event.target.value as RegisterInput["organizationType"],
+										)
+									}
+								>
+									{ORG_TYPE_OPTIONS.map((value) => (
+										<option key={value} value={value}>
+											{strings.auth.organizationTypes[value]}
+										</option>
+									))}
+								</select>
+								{error ? (
+									<p className="text-sm text-destructive">{error}</p>
+								) : null}
+							</div>
+						);
+					}}
+				</form.Field>
 
-				<Button type="submit" className="w-full" disabled={isPending}>
-					{isPending
-						? strings.auth.registerPending
-						: strings.auth.registerSubmit}
-				</Button>
+				<form.Subscribe selector={(state) => state.isSubmitting}>
+					{(isSubmitting) => (
+						<Button type="submit" className="w-full" disabled={isSubmitting}>
+							{isSubmitting
+								? strings.auth.registerPending
+								: strings.auth.registerSubmit}
+						</Button>
+					)}
+				</form.Subscribe>
 			</form>
 
 			<p className="text-center text-sm text-muted-foreground">

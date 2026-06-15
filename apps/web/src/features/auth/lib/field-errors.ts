@@ -2,20 +2,23 @@
  * Backend field-error mapping (Requirement 4.10, design Property 6).
  *
  * When a form submission fails, the API may return `error.details` — a map of
- * `fieldName -> message` describing per-field problems. This helper applies each
- * such entry onto the matching react-hook-form field via `setError`, and ONLY
- * onto that field, so the inline errors line up with the inputs the user can fix.
+ * `fieldName -> message` describing per-field problems. This helper turns that
+ * raw map into the field-error shape TanStack Form expects from a form-level
+ * `onSubmitAsync` validator: a `fields` record of `fieldName -> message` for the
+ * KNOWN form fields only, so the inline errors line up with the inputs the user
+ * can fix.
  *
- * It is intentionally pure (apart from the injected `setError`) and decoupled
- * from any specific form so it can be unit/property tested in isolation: it
- * reports which detail keys were mapped to a known field and which were not, so
- * the caller can decide whether to also show a general (non-field) toast.
+ * It is intentionally pure and decoupled from any specific form so it can be
+ * unit/property tested in isolation: it reports which detail keys were mapped to
+ * a known field and which were not, so the caller can decide whether to also
+ * show a general (non-field) toast.
  */
-import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
 
-/** Outcome of applying backend details onto a form. */
-export interface ApplyFieldErrorsResult {
-  /** Detail keys that matched a known field and were set as inline errors. */
+/** Outcome of mapping backend details onto a form's known fields. */
+export interface FieldErrorsResult {
+  /** `fieldName -> message` for keys that matched a known field and had a usable message. */
+  fields: Record<string, string>;
+  /** Detail keys that matched a known field and produced an inline message. */
   mapped: string[];
   /** Detail keys with no matching field, or no usable string message. */
   unmapped: string[];
@@ -39,36 +42,35 @@ function toMessage(value: unknown): string | null {
 }
 
 /**
- * Apply backend `error.details` onto the matching form fields.
+ * Map backend `error.details` onto the matching form fields.
  *
  * @param details The `ApiError.details` map (`field -> message`), if any.
  * @param knownFields The form's field paths; only these receive inline errors.
- * @param setError The react-hook-form `setError` for the target form.
- * @returns Which detail keys were mapped to a field vs. left unmapped.
+ * @returns The `fields` record for TanStack Form plus the mapped/unmapped keys.
  */
-export function applyFieldErrors<TFieldValues extends FieldValues>(
+export function toFieldErrors(
   details: Record<string, unknown> | undefined,
-  knownFields: readonly Path<TFieldValues>[],
-  setError: UseFormSetError<TFieldValues>,
-): ApplyFieldErrorsResult {
+  knownFields: readonly string[],
+): FieldErrorsResult {
+  const fields: Record<string, string> = {};
   const mapped: string[] = [];
   const unmapped: string[] = [];
 
   if (!details) {
-    return { mapped, unmapped };
+    return { fields, mapped, unmapped };
   }
 
-  const known = new Set<string>(knownFields as readonly string[]);
+  const known = new Set<string>(knownFields);
 
   for (const [key, raw] of Object.entries(details)) {
     const message = toMessage(raw);
     if (message !== null && known.has(key)) {
-      setError(key as Path<TFieldValues>, { type: 'server', message });
+      fields[key] = message;
       mapped.push(key);
     } else {
       unmapped.push(key);
     }
   }
 
-  return { mapped, unmapped };
+  return { fields, mapped, unmapped };
 }

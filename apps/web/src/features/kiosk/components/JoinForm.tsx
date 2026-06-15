@@ -5,20 +5,21 @@
  * The collected fields are GATED by the org's queue settings: the name field is
  * shown/required only when `requireName` is set, and the phone only when
  * `requirePhone` is set (R12.3). Validation uses the shared `joinQueueSchema`
- * tightened by `buildKioskJoinSchema(settings)` — the Kiosk never redefines the
- * base rules, it only enforces the required fields the settings demand.
+ * tightened by `buildKioskJoinSchema(settings)` — applied as TanStack Form's
+ * Standard Schema validator — so the Kiosk never redefines the base rules, it
+ * only enforces the required fields the settings demand.
  *
  * When neither field is required, this becomes a simple confirm screen showing
  * the chosen service plus a large "join" button (R12.8 touch target).
  */
 import { useMemo, type ReactElement } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm } from "@tanstack/react-form";
 import type { JoinQueueInput } from "@queuenow/shared-validation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { firstErrorMessage, zodFormValidator } from "@/lib/forms";
 import { strings } from "@/i18n";
 
 import {
@@ -59,21 +60,18 @@ export function JoinForm({
 	const required = kioskRequiredFields(settings);
 	const schema = useMemo(() => buildKioskJoinSchema(settings), [settings]);
 
-	const {
-		register,
-		handleSubmit,
-		formState: { errors },
-	} = useForm<JoinQueueInput>({
-		resolver: zodResolver(schema),
+	const form = useForm({
 		defaultValues: {
 			serviceId: service.id,
 			customerName: "",
 			customerPhone: "",
+		} as JoinQueueInput,
+		validators: {
+			onSubmit: zodFormValidator(schema),
 		},
-	});
-
-	const submit = handleSubmit((values) => {
-		onSubmit(values);
+		onSubmit: ({ value }) => {
+			onSubmit(value);
+		},
 	});
 
 	return (
@@ -119,59 +117,74 @@ export function JoinForm({
 				</div>
 			) : null}
 
-			<form noValidate onSubmit={submit} className="flex flex-col gap-6">
-				{/* serviceId is carried in the form state but never edited by the user. */}
-				<input type="hidden" {...register("serviceId")} />
-
+			<form
+				noValidate
+				className="flex flex-col gap-6"
+				onSubmit={(event) => {
+					event.preventDefault();
+					event.stopPropagation();
+					void form.handleSubmit();
+				}}
+			>
 				{required.name ? (
-					<div className="space-y-2">
-						<Label htmlFor="kiosk-name" className="text-lg">
-							{strings.kiosk.fields.name}
-						</Label>
-						<Input
-							id="kiosk-name"
-							autoComplete="name"
-							inputMode="text"
-							placeholder={strings.kiosk.fields.namePlaceholder}
-							className="h-14 text-lg"
-							aria-invalid={errors.customerName !== undefined}
-							aria-describedby={
-								errors.customerName ? "kiosk-name-error" : undefined
-							}
-							{...register("customerName")}
-						/>
-						{errors.customerName ? (
-							<p id="kiosk-name-error" className="text-base text-destructive">
-								{errors.customerName.message}
-							</p>
-						) : null}
-					</div>
+					<form.Field name="customerName">
+						{(field) => {
+							const error = firstErrorMessage(field.state.meta.errors);
+							return (
+								<div className="space-y-2">
+									<Label htmlFor={field.name} className="text-lg">
+										{strings.kiosk.fields.name}
+									</Label>
+									<Input
+										id={field.name}
+										name={field.name}
+										autoComplete="name"
+										inputMode="text"
+										placeholder={strings.kiosk.fields.namePlaceholder}
+										className="h-14 text-lg"
+										aria-invalid={error !== undefined}
+										value={field.state.value ?? ""}
+										onBlur={field.handleBlur}
+										onChange={(event) => field.handleChange(event.target.value)}
+									/>
+									{error ? (
+										<p className="text-base text-destructive">{error}</p>
+									) : null}
+								</div>
+							);
+						}}
+					</form.Field>
 				) : null}
 
 				{required.phone ? (
-					<div className="space-y-2">
-						<Label htmlFor="kiosk-phone" className="text-lg">
-							{strings.kiosk.fields.phone}
-						</Label>
-						<Input
-							id="kiosk-phone"
-							type="tel"
-							autoComplete="tel"
-							inputMode="tel"
-							placeholder={strings.kiosk.fields.phonePlaceholder}
-							className="h-14 text-lg"
-							aria-invalid={errors.customerPhone !== undefined}
-							aria-describedby={
-								errors.customerPhone ? "kiosk-phone-error" : undefined
-							}
-							{...register("customerPhone")}
-						/>
-						{errors.customerPhone ? (
-							<p id="kiosk-phone-error" className="text-base text-destructive">
-								{errors.customerPhone.message}
-							</p>
-						) : null}
-					</div>
+					<form.Field name="customerPhone">
+						{(field) => {
+							const error = firstErrorMessage(field.state.meta.errors);
+							return (
+								<div className="space-y-2">
+									<Label htmlFor={field.name} className="text-lg">
+										{strings.kiosk.fields.phone}
+									</Label>
+									<Input
+										id={field.name}
+										name={field.name}
+										type="tel"
+										autoComplete="tel"
+										inputMode="tel"
+										placeholder={strings.kiosk.fields.phonePlaceholder}
+										className="h-14 text-lg"
+										aria-invalid={error !== undefined}
+										value={field.state.value ?? ""}
+										onBlur={field.handleBlur}
+										onChange={(event) => field.handleChange(event.target.value)}
+									/>
+									{error ? (
+										<p className="text-base text-destructive">{error}</p>
+									) : null}
+								</div>
+							);
+						}}
+					</form.Field>
 				) : null}
 
 				<div className="flex flex-col gap-3 sm:flex-row-reverse">

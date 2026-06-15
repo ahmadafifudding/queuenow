@@ -17,7 +17,7 @@ They extend `project-standards.md`; where this file is more specific, it wins.
 | Server state | TanStack Query                                      |
 | Client state | Zustand (minimal — UI/ephemeral state only)         |
 | Styling      | Tailwind CSS + shadcn/ui (Base UI primitives)       |
-| Forms        | react-hook-form + `@hookform/resolvers/zod`         |
+| Forms        | TanStack Form (`@tanstack/react-form`)              |
 | Validation   | Zod schemas from `@queuenow/shared-validation`      |
 | API types    | `openapi-typescript` generated from backend Swagger |
 | Realtime     | `socket.io-client`                                  |
@@ -258,12 +258,20 @@ These public, on-site screens have different requirements from the dashboard.
 
 ## Forms & Validation
 
-- Use react-hook-form with the Zod resolver.
+- Use TanStack Form (`@tanstack/react-form`) with the shared Zod schemas as
+  Standard Schema validators.
 - Reuse schemas from `@queuenow/shared-validation` (e.g. `loginSchema`,
   `registerSchema`, `createServiceSchema`). Do NOT redefine validation on the
-  client — import the shared schema.
-- Map backend field errors (`error.details`) back onto form fields where possible.
-- Disable submit while pending; show inline field errors, not just toasts.
+  client — import the shared schema. Pass it as the `validators.onSubmit`
+  validator; for schemas that use `.default()`/transforms, wrap with the
+  `zodFormValidator` helper in `lib/forms.ts` so the form data type stays
+  concrete.
+- Map backend field errors (`error.details`) back onto form fields: convert
+  them with `toFieldErrors` and return `{ fields }` from the form's
+  `onSubmitAsync` validator (a non-field error returns `{ form }` and toasts the
+  code-mapped message).
+- Disable submit while submitting (subscribe to `state.isSubmitting`); show
+  inline field errors, not just toasts.
 
 ## Styling & Theming
 

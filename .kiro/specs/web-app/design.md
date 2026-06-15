@@ -296,7 +296,7 @@ The store is **not** wrapped in any persistence middleware, and the token is nev
 
 **Boot sequence (`main.tsx`)**: after env validation, attempt a single silent `POST /auth/refresh`. On success, populate the Auth_Store (`status: 'authenticated'`); on failure, set `status: 'unauthenticated'`. Only then render the router. This restores sessions across hard reloads where the in-memory token is gone but the refresh cookie persists (R4.5).
 
-**Forms** use react-hook-form with the Zod resolver and the shared schemas `loginSchema` / `registerSchema` from `@queuenow/shared-validation` (R4.1, R4.2). Submit is disabled while the mutation is pending (R4.9). Backend `error.details` are mapped onto the corresponding fields via `setError` (R4.10).
+**Forms** use TanStack Form (`@tanstack/react-form`) with the shared schemas `loginSchema` / `registerSchema` from `@queuenow/shared-validation` as Standard Schema validators (R4.1, R4.2). Submit is disabled while the submission is in flight via `state.isSubmitting` (R4.9). Backend `error.details` are mapped onto the corresponding fields by returning `{ fields }` from the form's `onSubmitAsync` validator (R4.10).
 
 **Logout** calls `POST /auth/logout`, clears the Auth_Store, and redirects to `/login` (R4.8).
 
@@ -593,7 +593,7 @@ Unknown codes fall back to a generic message; the raw backend message is never s
 
 ### Form errors
 
-react-hook-form holds field-level errors. On a `VALIDATION_ERROR` with `details`, the mutation hook calls `setError` per field (Property 6); non-field errors show as an inline form-level message, not a toast (steering "Forms & Validation").
+TanStack Form holds field-level errors. On a `VALIDATION_ERROR` with `details`, the form's `onSubmitAsync` validator returns `{ fields }` (built via `toFieldErrors`) so each maps to its field (Property 6); non-field errors return `{ form }` and surface a code-mapped toast (steering "Forms & Validation").
 
 ### Data-region and boundary errors
 

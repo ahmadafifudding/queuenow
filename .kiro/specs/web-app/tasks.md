@@ -115,7 +115,7 @@ Language: TypeScript (strict mode), per the design. Conventions follow `.kiro/st
     - _Requirements: 4.5, 4.6, 4.7_
 
   - [x] 6.3 Implement login/register forms and logout
-    - Build login and register forms with react-hook-form + Zod resolver using `loginSchema`/`registerSchema` from `@queuenow/shared-validation`; disable submit while pending; map `error.details` onto fields via `setError`; implement logout (`POST /auth/logout` → clear store → redirect to `/login`)
+    - Build login and register forms with TanStack Form using `loginSchema`/`registerSchema` from `@queuenow/shared-validation` as Standard Schema validators; disable submit while submitting; map `error.details` onto fields by returning `{ fields }` from `onSubmitAsync`; implement logout (`POST /auth/logout` → clear store → redirect to `/login`)
     - _Requirements: 4.1, 4.2, 4.8, 4.9, 4.10_
 
   - [x]\* 6.4 Write property test for the token-persistence invariant

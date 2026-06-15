@@ -27,9 +27,11 @@ export {
 export { useAuthStore } from './stores/auth-store';
 
 // Auth flow: forms, mutation hooks, and field-error mapping (task 6.3).
+// `toFieldErrors` maps backend `error.details` onto a form's known fields for
+// TanStack Form's `onSubmitAsync` validator.
 export { LoginForm } from './components/LoginForm';
 export { RegisterForm } from './components/RegisterForm';
 export { useLogin } from './hooks/useLogin';
 export { useRegister } from './hooks/useRegister';
 export { useLogout, type UseLogoutResult } from './hooks/useLogout';
-export { applyFieldErrors, type ApplyFieldErrorsResult } from './lib/field-errors';
+export { toFieldErrors, type FieldErrorsResult } from './lib/field-errors';

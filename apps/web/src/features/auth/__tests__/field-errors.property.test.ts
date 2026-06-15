@@ -1,53 +1,23 @@
 // Feature: web-app, Property 6: Backend field errors map onto matching form fields
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
-import { applyFieldErrors } from '../lib/field-errors';
+import { toFieldErrors } from '../lib/field-errors';
 
 /**
  * Property 6 — Validates: Requirements 4.10
  *
  * When the API returns `error.details` (a `field -> message` map), the form
- * helper `applyFieldErrors` must apply each entry whose key is a KNOWN form
- * field and whose value is a usable string message onto that exact field via
- * `setError` — exactly once, with the corresponding message, and never onto a
- * different field. Detail keys that are unknown or carry no usable string
- * message must NOT trigger a `setError` call and must be reported as `unmapped`.
- *
- * The helper is generic over `TFieldValues`; we exercise it against a fixed
- * shape so the field paths are concrete and we can assert precise targeting.
+ * helper `toFieldErrors` must map each entry whose key is a KNOWN form field and
+ * whose value is a usable string message into the returned `fields` record —
+ * exactly once, with the corresponding message, and never onto a different
+ * field. Detail keys that are unknown or carry no usable string message must NOT
+ * appear in `fields` and must be reported as `unmapped`. This `fields` record is
+ * what the form's `onSubmitAsync` validator returns to TanStack Form so the
+ * inline errors land on the matching inputs.
  */
-
-/** Concrete form shape used to anchor the generic field paths. */
-interface AuthForm extends FieldValues {
-  email: string;
-  password: string;
-  fullName: string;
-  organizationName: string;
-}
 
 /** Fixed pool of valid field paths for the form under test. */
 const FIELD_POOL = ['email', 'password', 'fullName', 'organizationName'] as const;
-
-/** A single captured `setError` invocation. */
-interface SetErrorCall {
-  field: string;
-  message: string | undefined;
-}
-
-/**
- * Build a typed spy for react-hook-form's `setError`. We record each call's
- * field and message into `calls`. The real signature is complex, so we cast a
- * minimal capturing function to `UseFormSetError<AuthForm>` THROUGH `unknown`
- * (no `any`): the cast is localized to the test boundary and the captured
- * `opts.message` is read in a type-safe way.
- */
-function makeSetErrorSpy(calls: SetErrorCall[]): UseFormSetError<AuthForm> {
-  const fn = (field: Path<AuthForm>, opts: { message?: string }): void => {
-    calls.push({ field, message: opts.message });
-  };
-  return fn as unknown as UseFormSetError<AuthForm>;
-}
 
 /**
  * Coerce a generated detail value into the single string the helper would
@@ -104,13 +74,10 @@ const detailsArb: fc.Arbitrary<Record<string, unknown>> = fc
   });
 
 describe('Property 6: backend field errors map onto matching form fields', () => {
-  it('applies usable messages for known fields exactly once on the matching field, leaving others unmapped', () => {
+  it('maps usable messages for known fields exactly once onto the matching field, leaving others unmapped', () => {
     fc.assert(
       fc.property(detailsArb, (details) => {
-        const calls: SetErrorCall[] = [];
-        const setError = makeSetErrorSpy(calls);
-
-        const { mapped, unmapped } = applyFieldErrors<AuthForm>(details, FIELD_POOL, setError);
+        const { fields, mapped, unmapped } = toFieldErrors(details, FIELD_POOL);
 
         const knownSet = new Set<string>(FIELD_POOL);
 
@@ -132,27 +99,18 @@ describe('Property 6: backend field errors map onto matching form fields', () =>
         // Every input key is accounted for exactly once across the partition.
         expect(mapped.length + unmapped.length).toBe(Object.keys(details).length);
 
-        // Exactly one setError call per expected-mapped key, with no extras.
-        expect(calls.length).toBe(expectedMapped.size);
-
-        // No setError call targets a field absent from the input details.
-        const inputKeys = new Set(Object.keys(details));
-        for (const call of calls) {
-          expect(inputKeys.has(call.field)).toBe(true);
-        }
-
-        // Each expected-mapped key is applied exactly once, to its OWN field,
-        // with the corresponding message (no cross-field leakage).
+        // The `fields` record has exactly the expected-mapped keys, each with
+        // its OWN message (no cross-field leakage, no extras).
+        expect(new Set(Object.keys(fields))).toEqual(new Set(expectedMapped.keys()));
         for (const [field, message] of expectedMapped) {
-          const forField = calls.filter((c) => c.field === field);
-          expect(forField).toHaveLength(1);
-          expect(forField[0]?.message).toBe(message);
+          expect(fields[field]).toBe(message);
         }
 
-        // Unknown keys never produce a setError call.
-        const calledFields = new Set(calls.map((c) => c.field));
+        // Unknown/unusable keys never appear in the fields record. Use an
+        // own-property check so generated keys like "constructor"/"toString"
+        // (present on Object.prototype) are not mistaken for mapped fields.
         for (const key of expectedUnmapped) {
-          expect(calledFields.has(key)).toBe(false);
+          expect(Object.prototype.hasOwnProperty.call(fields, key)).toBe(false);
         }
       }),
       { numRuns: 200 },

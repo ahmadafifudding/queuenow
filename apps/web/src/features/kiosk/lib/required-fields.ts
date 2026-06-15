@@ -50,8 +50,8 @@ function isBlank(value: string | undefined): boolean {
  *
  * Starts from the shared {@link joinQueueSchema} and adds a refinement that
  * requires `customerName`/`customerPhone` exactly when the settings require
- * them, attaching the issue to the matching field path so react-hook-form can
- * surface it inline. The serializable shape stays equal to {@link JoinQueueInput}.
+ * them, attaching the issue to the matching field path so the field path
+ * surfaces inline. The serializable shape stays equal to {@link JoinQueueInput}.
  *
  * @param settings - the org's queue settings.
  * @returns a Zod schema that gates the required fields per the settings.

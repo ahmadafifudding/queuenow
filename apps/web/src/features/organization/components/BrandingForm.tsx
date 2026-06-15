@@ -2,16 +2,18 @@
  * BrandingForm — edit logo URL, primary color, and kiosk QR caption (R11.2).
  *
  * - Validation uses the shared `updateBrandingSchema` (hex `primaryColor`,
- *   URL `logoUrl`) via react-hook-form + the Zod resolver.
+ *   URL `logoUrl`) via TanStack Form's Standard Schema validator.
  * - The primary color uses a native color picker plus a text input bound to the
- *   same field so the value stays a `#RRGGBB` hex string the schema accepts.
+ *   same `primaryColor` field so the value stays a `#RRGGBB` hex string the
+ *   schema accepts.
+ * - Constrained-optional fields hold `undefined` (not `''`) when blank so they
+ *   pass `.url()` / the hex regex; empties are simply omitted from the payload.
  * - On success the mutation re-applies the brand color at runtime (R11.3) and a
- *   toast confirms. On failure, field errors map onto inputs with a code-mapped
- *   fallback toast (R11.8).
+ *   toast confirms. On failure, field errors map onto inputs (returned from
+ *   `onSubmitAsync`) with a code-mapped fallback toast (R11.8).
  */
 import type { ReactElement } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm, type Path } from "react-hook-form";
+import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
 import {
 	updateBrandingSchema,
@@ -21,16 +23,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { applyFieldErrors } from "@/features/auth";
+import { toFieldErrors } from "@/features/auth";
+import { ApiError } from "@/lib/api/client";
 import { getErrorMessage } from "@/lib/api/error-map";
+import { firstErrorMessage } from "@/lib/forms";
 import { strings } from "@/i18n";
 
 import type { OrganizationBranding } from "../types";
-import { emptyToUndefined } from "../lib/form-coerce";
 import { useUpdateBranding } from "../api/useUpdateBranding";
 
 /** Fields eligible for backend inline error mapping. */
-const BRANDING_FIELDS: readonly Path<UpdateBrandingInput>[] = [
+const BRANDING_FIELDS: readonly (keyof UpdateBrandingInput)[] = [
 	"logoUrl",
 	"primaryColor",
 	"qrText",
@@ -40,6 +43,11 @@ const BRANDING_FIELDS: readonly Path<UpdateBrandingInput>[] = [
 const DEFAULT_PRIMARY_HEX = "#3B82F6";
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
+
+/** Empty string → `undefined`, so a blank constrained field is omitted. */
+function blankToUndefined(value: string): string | undefined {
+	return value === "" ? undefined : value;
+}
 
 export interface BrandingFormProps {
 	/** The organization whose branding is being edited. */
@@ -55,37 +63,36 @@ export function BrandingForm({
 	const copy = strings.organization.branding;
 	const update = useUpdateBranding(orgId);
 
-	const {
-		register,
-		handleSubmit,
-		setError,
-		control,
-		formState: { errors },
-	} = useForm<UpdateBrandingInput>({
-		resolver: zodResolver(updateBrandingSchema),
+	const form = useForm({
 		defaultValues: {
-			logoUrl: branding?.logoUrl ?? "",
-			primaryColor: branding?.primaryColor ?? "",
-			qrText: branding?.qrText ?? "",
-		},
-	});
-
-	const onSubmit = handleSubmit((values) => {
-		update.mutate(values, {
-			onSuccess: () => {
-				toast.success(copy.saved);
-			},
-			onError: (error) => {
-				const { mapped } = applyFieldErrors<UpdateBrandingInput>(
-					error.details,
-					BRANDING_FIELDS,
-					setError,
-				);
-				if (mapped.length === 0) {
-					toast.error(getErrorMessage(error));
+			logoUrl: branding?.logoUrl ?? undefined,
+			primaryColor: branding?.primaryColor ?? undefined,
+			qrText: branding?.qrText ?? undefined,
+		} as UpdateBrandingInput,
+		validators: {
+			onSubmit: updateBrandingSchema,
+			onSubmitAsync: async ({ value }) => {
+				try {
+					await update.mutateAsync(value);
+					return null;
+				} catch (error) {
+					const apiError = error instanceof ApiError ? error : undefined;
+					const { fields, mapped } = toFieldErrors(
+						apiError?.details,
+						BRANDING_FIELDS as readonly string[],
+					);
+					if (mapped.length === 0) {
+						const message = getErrorMessage(apiError);
+						toast.error(message);
+						return { form: message };
+					}
+					return { fields };
 				}
 			},
-		});
+		},
+		onSubmit: () => {
+			toast.success(copy.saved);
+		},
 	});
 
 	return (
@@ -95,103 +102,119 @@ export function BrandingForm({
 				<p className="text-sm text-muted-foreground">{copy.description}</p>
 			</div>
 
-			<form noValidate onSubmit={onSubmit} className="mt-6 space-y-4">
-				<div className="space-y-2">
-					<Label htmlFor="branding-logo">{copy.fields.logoUrl}</Label>
-					<Input
-						id="branding-logo"
-						type="url"
-						inputMode="url"
-						placeholder="https://…"
-						aria-invalid={errors.logoUrl !== undefined}
-						aria-describedby={
-							errors.logoUrl ? "branding-logo-error" : undefined
-						}
-						{...register("logoUrl", { setValueAs: emptyToUndefined })}
-					/>
-					{errors.logoUrl ? (
-						<p id="branding-logo-error" className="text-sm text-destructive">
-							{errors.logoUrl.message}
-						</p>
-					) : null}
-				</div>
+			<form
+				noValidate
+				className="mt-6 space-y-4"
+				onSubmit={(event) => {
+					event.preventDefault();
+					event.stopPropagation();
+					void form.handleSubmit();
+				}}
+			>
+				<form.Field name="logoUrl">
+					{(field) => {
+						const error = firstErrorMessage(field.state.meta.errors);
+						return (
+							<div className="space-y-2">
+								<Label htmlFor={field.name}>{copy.fields.logoUrl}</Label>
+								<Input
+									id={field.name}
+									name={field.name}
+									type="url"
+									inputMode="url"
+									placeholder="https://…"
+									aria-invalid={error !== undefined}
+									value={field.state.value ?? ""}
+									onBlur={field.handleBlur}
+									onChange={(event) =>
+										field.handleChange(blankToUndefined(event.target.value))
+									}
+								/>
+								{error ? (
+									<p className="text-sm text-destructive">{error}</p>
+								) : null}
+							</div>
+						);
+					}}
+				</form.Field>
 
-				<div className="space-y-2">
-					<Label htmlFor="branding-color">{copy.fields.primaryColor}</Label>
-					<Controller
-						control={control}
-						name="primaryColor"
-						render={({ field }) => {
-							const value = field.value ?? "";
-							const pickerValue = HEX_COLOR.test(value)
-								? value
-								: DEFAULT_PRIMARY_HEX;
-							return (
+				<form.Field name="primaryColor">
+					{(field) => {
+						const error = firstErrorMessage(field.state.meta.errors);
+						const value = field.state.value ?? "";
+						const pickerValue = HEX_COLOR.test(value)
+							? value
+							: DEFAULT_PRIMARY_HEX;
+						return (
+							<div className="space-y-2">
+								<Label htmlFor={field.name}>{copy.fields.primaryColor}</Label>
 								<div className="flex items-center gap-3">
 									<input
 										type="color"
 										aria-label={copy.fields.primaryColor}
 										className="h-10 w-12 shrink-0 cursor-pointer rounded-md border border-input bg-background p-1"
 										value={pickerValue}
-										onChange={(event) => field.onChange(event.target.value)}
+										onChange={(event) => field.handleChange(event.target.value)}
 									/>
 									<Input
-										id="branding-color"
-										placeholder={DEFAULT_PRIMARY_HEX}
-										aria-invalid={errors.primaryColor !== undefined}
-										aria-describedby={
-											errors.primaryColor
-												? "branding-color-error"
-												: "branding-color-hint"
-										}
-										value={value}
-										onChange={(event) => field.onChange(event.target.value)}
-										onBlur={field.onBlur}
+										id={field.name}
 										name={field.name}
-										ref={field.ref}
+										placeholder={DEFAULT_PRIMARY_HEX}
+										aria-invalid={error !== undefined}
+										value={value}
+										onBlur={field.handleBlur}
+										onChange={(event) =>
+											field.handleChange(blankToUndefined(event.target.value))
+										}
 									/>
 								</div>
-							);
-						}}
-					/>
-					{errors.primaryColor ? (
-						<p id="branding-color-error" className="text-sm text-destructive">
-							{errors.primaryColor.message}
-						</p>
-					) : (
-						<p
-							id="branding-color-hint"
-							className="text-sm text-muted-foreground"
-						>
-							{copy.primaryColorHint}
-						</p>
-					)}
-				</div>
+								{error ? (
+									<p className="text-sm text-destructive">{error}</p>
+								) : (
+									<p className="text-sm text-muted-foreground">
+										{copy.primaryColorHint}
+									</p>
+								)}
+							</div>
+						);
+					}}
+				</form.Field>
 
-				<div className="space-y-2">
-					<Label htmlFor="branding-qr">{copy.fields.qrText}</Label>
-					<Input
-						id="branding-qr"
-						aria-invalid={errors.qrText !== undefined}
-						aria-describedby={
-							errors.qrText ? "branding-qr-error" : "branding-qr-hint"
-						}
-						{...register("qrText", { setValueAs: emptyToUndefined })}
-					/>
-					{errors.qrText ? (
-						<p id="branding-qr-error" className="text-sm text-destructive">
-							{errors.qrText.message}
-						</p>
-					) : (
-						<p id="branding-qr-hint" className="text-sm text-muted-foreground">
-							{copy.qrTextHint}
-						</p>
-					)}
-				</div>
+				<form.Field name="qrText">
+					{(field) => {
+						const error = firstErrorMessage(field.state.meta.errors);
+						return (
+							<div className="space-y-2">
+								<Label htmlFor={field.name}>{copy.fields.qrText}</Label>
+								<Input
+									id={field.name}
+									name={field.name}
+									aria-invalid={error !== undefined}
+									value={field.state.value ?? ""}
+									onBlur={field.handleBlur}
+									onChange={(event) =>
+										field.handleChange(blankToUndefined(event.target.value))
+									}
+								/>
+								{error ? (
+									<p className="text-sm text-destructive">{error}</p>
+								) : (
+									<p className="text-sm text-muted-foreground">
+										{copy.qrTextHint}
+									</p>
+								)}
+							</div>
+						);
+					}}
+				</form.Field>
 
-				<Button type="submit" disabled={update.isPending}>
-					{update.isPending ? copy.submitPending : copy.submit}
-				</Button>
+				<form.Subscribe selector={(state) => state.isSubmitting}>
+					{(isSubmitting) => (
+						<Button type="submit" disabled={isSubmitting}>
+							{isSubmitting ? copy.submitPending : copy.submit}
+						</Button>
+					)}
+				</form.Subscribe>
 			</form>
 		</section>
 	);

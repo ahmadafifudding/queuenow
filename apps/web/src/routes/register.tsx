@@ -4,7 +4,7 @@ import { RegisterForm } from "@/features/auth/components/RegisterForm";
 
 /**
  * Register route. Thin wrapper that renders the auth feature's `RegisterForm`
- * (react-hook-form + shared `registerSchema`); all behavior lives in the feature.
+ * (TanStack Form + shared `registerSchema`); all behavior lives in the feature.
  */
 export const Route = createFileRoute("/register")({
 	component: RegisterComponent,

@@ -1,12 +1,13 @@
 /*
- * Small react-hook-form `setValueAs` coercers for the organization forms.
+ * Small submit-time coercers for the organization forms.
  *
  * The shared `@queuenow/shared-validation` settings/branding/org schemas make
  * every field `.optional()`. Native inputs always yield a string (`''` when
- * empty), so an empty optional field would otherwise be validated as `''` and
+ * empty), so an empty optional field would otherwise be submitted as `''` and
  * fail rules like `.email()` / `.url()`. These coercers normalize empties to
- * `undefined` (and numbers to `number`) BEFORE validation/submission, so empty
- * optional fields are simply omitted — without redefining the shared schema.
+ * `undefined` (and numbers to `number`) at submit time — applied when building
+ * the coerced value object before the mutation runs — so empty optional fields
+ * are simply omitted, without redefining the shared schema.
  */
 
 /** Empty string → `undefined`; otherwise the trimmed string is kept as-is. */

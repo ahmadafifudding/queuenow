@@ -95,7 +95,7 @@ Because this is a large surface, requirements are organized into delivery phases
 
 #### Acceptance Criteria
 
-1. THE Web_App SHALL provide a login form validated with the `loginSchema` from `@queuenow/shared-validation` via react-hook-form and the Zod resolver.
+1. THE Web_App SHALL provide a login form validated with the `loginSchema` from `@queuenow/shared-validation` via TanStack Form's Standard Schema validator.
 2. THE Web_App SHALL provide a registration form validated with the `registerSchema` from `@queuenow/shared-validation`.
 3. WHEN login succeeds, THE Auth_Store SHALL store the access token in memory together with the authenticated user and the organization role from the response.
 4. THE Web_App SHALL store the access token only in the Auth_Store memory and SHALL keep it out of `localStorage`, `sessionStorage`, and non-httpOnly cookies.
